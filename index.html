@@ -156,6 +156,9 @@
 </div><!-- Fin del mainContent -->
 
 <script>
+  // REEMPLAZA ESTA LÍNEA CON TU API DE SHEETDB
+  const SHEETDB_API = "https://sheetdb.io/api/v1/YOUR-API-ID"; // <--- Pon aquí tu URL real
+
   // --- LOGIN SENCILLO ---
   const USER = "admin";
   const PASS = "1234";
@@ -167,6 +170,7 @@
     if (usuario === USER && password === PASS) {
       document.getElementById("loginModal").classList.add("hidden");
       document.getElementById("mainContent").classList.remove("hidden");
+      fetchAndRender();
     } else {
       document.getElementById("loginError").classList.remove("hidden");
       setTimeout(() => {
@@ -175,38 +179,59 @@
     }
   };
 
-  // ---- Datos iniciales y LocalStorage ----
-  const initialEntries = [];
-  function loadEntries() {
-    const data = localStorage.getItem('databaseEntries');
-    return data ? JSON.parse(data) : initialEntries;
-  }
-  function saveEntries(entries) {
-    localStorage.setItem('databaseEntries', JSON.stringify(entries));
-  }
-  let entries = loadEntries();
+  // -------- FUNCIONES PARA LEER/ESCRIBIR EN SHEETDB --------
+  let entries = [];
   let editId = null;
 
-  // --- Utilidad para convertir serial de Excel a fecha string YYYY-MM-DD ---
-  function excelDateToString(excelSerial) {
-    if (typeof excelSerial === "number") {
-      // Adaptado para Excel fechas (base 1900, días)
-      const utc_days = Math.floor(excelSerial - 25569);
-      const date = new Date(utc_days * 86400 * 1000);
-      // Corrige desfase horario
-      date.setMinutes(date.getMinutes() + date.getTimezoneOffset());
-      // Formato YYYY-MM-DD
-      return date.toISOString().split('T')[0];
-    }
-    // Si ya viene string tipo fecha, devolver como está
-    return excelSerial;
+  function fetchAndRender() {
+    fetch(SHEETDB_API)
+      .then(res => res.json())
+      .then(data => {
+        entries = data.map((e, idx) => ({
+          ...e,
+          id: idx + 1,
+          finalStock: parseInt(e.finalStock) || 0,
+          price: parseFloat(e.price) || 0
+        }));
+        renderTable(document.getElementById('searchInput').value);
+      });
+  }
+
+  function addEntry(data, cb) {
+    fetch(SHEETDB_API, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({data})
+    }).then(() => fetchAndRender()).then(cb);
+  }
+
+  function updateEntry(entry, cb) {
+    // SheetDB no permite update por ID, se puede hacer por un campo único. Aquí buscamos por combinación de varios campos.
+    fetch(`${SHEETDB_API}/search?date=${entry.date}&licensePlate=${entry.licensePlate}&product=${entry.product}`, {
+      method: "PATCH",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({data: entry})
+    }).then(() => fetchAndRender()).then(cb);
+  }
+
+  function deleteEntry(entry, cb) {
+    // Igual que update, SheetDB borra por campo único
+    fetch(`${SHEETDB_API}/search?date=${entry.date}&licensePlate=${entry.licensePlate}&product=${entry.product}`, {
+      method: "DELETE"
+    }).then(() => fetchAndRender()).then(cb);
+  }
+
+  function clearAllEntries(cb) {
+    // SheetDB no permite "delete all" en la API gratis, hay que borrar uno por uno
+    let promises = entries.map(entry => deleteEntry(entry, ()=>{}));
+    Promise.all(promises).then(cb);
   }
 
   // ---- Render Tabla ----
   function renderTable(filter = '') {
     const tbody = document.getElementById('tableBody');
     tbody.innerHTML = '';
-    const term = filter.trim().toLowerCase();
+    const term = filter ? filter.trim().toLowerCase() : "";
     const filtered = term
       ? entries.filter(e =>
           Object.values(e).some(val =>
@@ -226,18 +251,16 @@
     }
     filtered.forEach(entry => {
       const row = document.createElement('tr');
-      // Mostrar fecha como texto (no número serial)
-      let fechaStr = excelDateToString(entry.date);
       row.innerHTML = `
-        <td class="px-2 py-2">${fechaStr}</td>
-        <td class="px-2 py-2">${entry.licensePlate}</td>
-        <td class="px-2 py-2">${entry.brand}</td>
-        <td class="px-2 py-2">${entry.type}</td>
-        <td class="px-2 py-2">${entry.product}</td>
-        <td class="px-2 py-2">${entry.description}</td>
-        <td class="px-2 py-2">${entry.observations}</td>
-        <td class="px-2 py-2">${entry.supplier}</td>
-        <td class="px-2 py-2">${entry.finalStock}</td>
+        <td class="px-2 py-2">${entry.date || ""}</td>
+        <td class="px-2 py-2">${entry.licensePlate || ""}</td>
+        <td class="px-2 py-2">${entry.brand || ""}</td>
+        <td class="px-2 py-2">${entry.type || ""}</td>
+        <td class="px-2 py-2">${entry.product || ""}</td>
+        <td class="px-2 py-2">${entry.description || ""}</td>
+        <td class="px-2 py-2">${entry.observations || ""}</td>
+        <td class="px-2 py-2">${entry.supplier || ""}</td>
+        <td class="px-2 py-2">${entry.finalStock || 0}</td>
         <td class="px-2 py-2">$${Number(entry.price).toFixed(2)}</td>
         <td class="px-2 py-2 flex flex-col sm:flex-row space-y-1 sm:space-y-0 sm:space-x-2">
           <button class="text-indigo-600 hover:underline editBtn" data-id="${entry.id}">Editar</button>
@@ -250,7 +273,12 @@
       btn.onclick = () => openModal('edit', btn.dataset.id);
     });
     document.querySelectorAll('.deleteBtn').forEach(btn => {
-      btn.onclick = () => handleDelete(btn.dataset.id);
+      btn.onclick = () => {
+        let entry = entries.find(e => e.id == btn.dataset.id);
+        if (confirm('¿Estás seguro de eliminar este producto?')) {
+          deleteEntry(entry);
+        }
+      };
     });
   }
 
@@ -266,13 +294,7 @@
     if (type === 'edit' && id) {
       const entry = entries.find(e => e.id === Number(id));
       for (let el of form.elements) {
-        if (el.name && entry.hasOwnProperty(el.name)) {
-          if (el.name === "date") {
-            el.value = excelDateToString(entry.date);
-          } else {
-            el.value = entry[el.name];
-          }
-        }
+        if (el.name && entry.hasOwnProperty(el.name)) el.value = entry[el.name];
       }
     } else {
       form.reset();
@@ -297,23 +319,14 @@
       return;
     }
     if (editId) {
-      entries = entries.map(e => e.id === editId ? {...e, ...data, id: editId} : e);
+      // Editar
+      const entry = entries.find(e => e.id === editId);
+      updateEntry({...entry, ...data}, closeModal);
     } else {
-      const newId = entries.length ? Math.max(...entries.map(e => e.id)) + 1 : 1;
-      entries.push({...data, id: newId});
+      // Nuevo
+      addEntry(data, closeModal);
     }
-    saveEntries(entries);
-    closeModal();
-    renderTable(document.getElementById('searchInput').value);
   };
-
-  function handleDelete(id) {
-    if (confirm('¿Estás seguro de eliminar este producto?')) {
-      entries = entries.filter(e => e.id !== Number(id));
-      saveEntries(entries);
-      renderTable(document.getElementById('searchInput').value);
-    }
-  }
 
   document.getElementById('searchInput').oninput = function() {
     renderTable(this.value);
@@ -345,26 +358,28 @@
       const sheetName = workbook.SheetNames[0];
       const sheet = workbook.Sheets[sheetName];
       const imported = XLSX.utils.sheet_to_json(sheet);
-      let newEntries = imported.map((row, idx) => {
-        return {
-          id: Date.now() + idx,
-          date: excelDateToString(row.date),
-          licensePlate: row.licensePlate || '',
-          brand: row.brand || '',
-          type: row.type || '',
-          product: row.product || '',
-          description: row.description || '',
-          observations: row.observations || '',
-          supplier: row.supplier || '',
-          finalStock: parseInt(row.finalStock) || 0,
-          price: parseFloat(row.price) || 0
-        };
-      });
-      entries = entries.concat(newEntries);
-      saveEntries(entries);
-      renderTable(document.getElementById('searchInput').value);
-      closeImportModal();
-      alert('Productos importados correctamente');
+      // Cargar cada fila como un producto
+      let count = 0;
+      (async () => {
+        for (let row of imported) {
+          await addEntry({
+            date: row.date || "",
+            licensePlate: row.licensePlate || "",
+            brand: row.brand || "",
+            type: row.type || "",
+            product: row.product || "",
+            description: row.description || "",
+            observations: row.observations || "",
+            supplier: row.supplier || "",
+            finalStock: parseInt(row.finalStock) || 0,
+            price: parseFloat(row.price) || 0
+          }, ()=>{});
+          count++;
+        }
+        closeImportModal();
+        fetchAndRender();
+        alert(`Productos importados correctamente (${count})`);
+      })();
     };
     reader.readAsArrayBuffer(file);
   });
@@ -372,16 +387,10 @@
   // ---- Botón borrar todo ----
   document.getElementById('clearBtn').onclick = function() {
     if (confirm('¿Estás seguro de que deseas borrar TODOS los productos?')) {
-      entries = [];
-      saveEntries(entries);
-      renderTable();
+      clearAllEntries(fetchAndRender);
     }
   };
-
-  // --- Inicia tabla solo si está logueado ---
-  if (!document.getElementById("mainContent").classList.contains("hidden")) {
-    renderTable();
-  }
 </script>
 </body>
 </html>
+
