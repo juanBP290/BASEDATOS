@@ -5,6 +5,16 @@
   <title>Base de Datos de Productos</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .scroll-table-x {
+      overflow-x: auto;
+      position: relative;
+      width: 100%;
+    }
+    .scroll-table-x::-webkit-scrollbar {
+      height: 8px;
+    }
+  </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
 
@@ -27,28 +37,29 @@
   </div>
 </div>
 
-<!-- El resto de la web: estará oculto hasta login -->
+<!-- Main Content -->
 <div id="mainContent" class="hidden">
-
-  <!-- Header -->
   <header class="bg-white shadow-sm">
     <div class="max-w-5xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center">
       <h1 class="text-2xl font-bold text-gray-900 mb-3 sm:mb-0">Base de Datos de Productos</h1>
-      <div class="flex space-x-2">
-        <button id="logoutBtn" class="bg-gray-400 hover:bg-gray-600 text-white px-4 py-2 rounded-md transition-colors duration-200">
-          Cerrar sesión
-        </button>
-      </div>
+      <button id="logoutBtn" class="bg-gray-400 hover:bg-gray-600 text-white px-4 py-2 rounded-md transition-colors duration-200">
+        Cerrar sesión
+      </button>
     </div>
-    <div class="max-w-5xl mx-auto px-4 pb-4">
-      <input id="searchInput" type="text" placeholder="Buscar..." class="w-full pl-3 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+    <!-- DOS BARRAS DE BUSQUEDA -->
+    <div class="max-w-5xl mx-auto px-4 pb-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+      <input id="searchInput" type="text" placeholder="Buscar en toda la base de datos..." class="w-full pl-3 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+      <input id="searchCodigo" type="text" placeholder="Buscar solo por CODIGO, PRODUCTO, MARCA..." class="w-full pl-3 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" />
     </div>
   </header>
 
-  <!-- Main Content -->
   <main class="max-w-5xl mx-auto px-4 py-6">
+    <!-- Scroll horizontal arriba -->
+    <div class="scroll-table-x mb-2" id="scrollTop">
+      <div style="width:2000px; height:1px;"></div>
+    </div>
     <div class="bg-white shadow overflow-hidden sm:rounded-lg">
-      <div class="overflow-x-auto">
+      <div class="scroll-table-x" id="scrollBottom">
         <table class="min-w-full divide-y divide-gray-200" id="productsTable">
           <thead class="bg-gray-50">
             <tr>
@@ -72,13 +83,11 @@
       </div>
     </div>
   </main>
-</div><!-- Fin del mainContent -->
+</div>
 
 <script>
   // Tu SheetDB API
   const SHEETDB_API = "https://sheetdb.io/api/v1/yt1a1pctg3qca";
-
-  // --- LOGIN SENCILLO CON "SESIÓN ABIERTA" ---
   const USER = "admin";
   const PASS = "1234";
 
@@ -90,7 +99,7 @@
     else localStorage.removeItem("sessionActiva");
   }
 
-  // Mostrar login solo si no hay sesión guardada
+  // Mantiene sesión después de recargar
   if(isLoggedIn()) {
     document.getElementById("loginModal").classList.add("hidden");
     document.getElementById("mainContent").classList.remove("hidden");
@@ -115,15 +124,13 @@
     }
   };
 
-  // Botón cerrar sesión
   document.getElementById("logoutBtn").onclick = function() {
     setLoggedIn(false);
     window.location.reload();
   };
 
-  // -------- FUNCIONES PARA LEER EN SHEETDB --------
+  // Leer datos de SheetDB
   let entries = [];
-
   function fetchAndRender() {
     fetch(SHEETDB_API)
       .then(res => res.json())
@@ -134,32 +141,52 @@
           finalStock: parseInt(e.finalStock) || 0,
           price: parseFloat(e.price) || 0
         }));
-        renderTable(document.getElementById('searchInput').value);
+        renderTable();
       });
   }
 
-  // ---- Render Tabla ----
-  function renderTable(filter = '') {
+  // Buscadores
+  let search1 = "";
+  let search2 = "";
+
+  // Render tabla con dos filtros
+  function renderTable() {
     const tbody = document.getElementById('tableBody');
     tbody.innerHTML = '';
-    const term = filter ? filter.trim().toLowerCase() : "";
-    const filtered = term
-      ? entries.filter(e =>
-          Object.values(e).some(val =>
-            String(val).toLowerCase().includes(term)
-          )
+    let filtered = entries;
+
+    // Primer filtro: búsqueda general (toda la base)
+    if(search1.trim()) {
+      const t1 = search1.trim().toLowerCase();
+      filtered = filtered.filter(e =>
+        Object.values(e).some(val =>
+          String(val).toLowerCase().includes(t1)
         )
-      : entries;
+      );
+    }
+
+    // Segundo filtro: búsqueda por codigo, codigoproducto, marcaanaquel, product
+    if(search2.trim()) {
+      const t2 = search2.trim().toLowerCase();
+      filtered = filtered.filter(e =>
+        (e.codigo && e.codigo.toLowerCase().includes(t2)) ||
+        (e.codigoproducto && e.codigoproducto.toLowerCase().includes(t2)) ||
+        (e.marcaanaquel && e.marcaanaquel.toLowerCase().includes(t2)) ||
+        (e.product && e.product.toLowerCase().includes(t2))
+      );
+    }
+
     if (filtered.length === 0) {
       tbody.innerHTML = `
         <tr>
           <td colspan="11" class="px-6 py-4 text-center text-gray-500">
-            ${term ? 'No se encontraron resultados' : 'No hay productos en la base de datos'}
+            No se encontraron resultados
           </td>
         </tr>
       `;
       return;
     }
+
     filtered.forEach(entry => {
       const row = document.createElement('tr');
       row.innerHTML = `
@@ -173,15 +200,39 @@
         <td class="px-2 py-2">${entry.observations || ""}</td>
         <td class="px-2 py-2">${entry.supplier || ""}</td>
         <td class="px-2 py-2">${entry.finalStock || 0}</td>
-        <td class="px-2 py-2">$${Number(entry.price).toFixed(2)}</td>
+        <td class="px-2 py-2">S/${Number(entry.price).toFixed(2)}</td>
       `;
       tbody.appendChild(row);
     });
+    sincronizarScroll();
   }
 
+  // Dos buscadores independientes
   document.getElementById('searchInput').oninput = function() {
-    renderTable(this.value);
+    search1 = this.value;
+    renderTable();
   };
+  document.getElementById('searchCodigo').oninput = function() {
+    search2 = this.value;
+    renderTable();
+  };
+
+  // SINCRONIZAR SCROLL HORIZONTAL arriba y abajo
+  function sincronizarScroll() {
+    const scrollTop = document.getElementById('scrollTop');
+    const scrollBottom = document.getElementById('scrollBottom');
+    // Sincroniza el scroll de arriba y abajo
+    scrollTop.scrollLeft = scrollBottom.scrollLeft;
+    scrollTop.onscroll = function() {
+      scrollBottom.scrollLeft = scrollTop.scrollLeft;
+    };
+    scrollBottom.onscroll = function() {
+      scrollTop.scrollLeft = scrollBottom.scrollLeft;
+    };
+  }
+
+  // Inicializa scroll sync después de render
+  window.onload = () => setTimeout(sincronizarScroll, 500);
 </script>
 </body>
 </html>
