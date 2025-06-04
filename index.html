@@ -85,20 +85,22 @@
 </div>
 
 <script>
-  // Tu SheetDB API
-  const SHEETDB_API = "https://sheetdb.io/api/v1/yt1a1pctg3qca";
+  // Usuario y contraseña
   const USER = "admin";
   const PASS = "1234";
+  // SheetDB API
+  const SHEETDB_API = "https://sheetdb.io/api/v1/yt1a1pctg3qca";
 
+  // ---- Cambia aquí de localStorage a sessionStorage ----
   function isLoggedIn() {
-    return localStorage.getItem("sessionActiva") === "SI";
+    return sessionStorage.getItem("sessionActiva") === "SI";
   }
   function setLoggedIn(state) {
-    if(state) localStorage.setItem("sessionActiva", "SI");
-    else localStorage.removeItem("sessionActiva");
+    if(state) sessionStorage.setItem("sessionActiva", "SI");
+    else sessionStorage.removeItem("sessionActiva");
   }
 
-  // Mantiene sesión después de recargar
+  // Mantiene sesión solo mientras la pestaña/navegador está abierto
   if(isLoggedIn()) {
     document.getElementById("loginModal").classList.add("hidden");
     document.getElementById("mainContent").classList.remove("hidden");
@@ -218,6 +220,7 @@
 </script>
 </body>
 </html>
+
 
 
 
