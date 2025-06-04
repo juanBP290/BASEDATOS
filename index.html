@@ -39,11 +39,8 @@
         <button id="importBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md transition-colors duration-200">
           Importar Excel
         </button>
-        <button id="addBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors duration-200">
-          Nuevo Producto
-        </button>
-        <button id="clearBtn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md transition-colors duration-200">
-          Borrar todo
+        <button id="logoutBtn" class="bg-gray-400 hover:bg-gray-600 text-white px-4 py-2 rounded-md transition-colors duration-200">
+          Cerrar sesión
         </button>
       </div>
     </div>
@@ -80,64 +77,6 @@
     </div>
   </main>
 
-  <!-- Modal agregar/editar producto -->
-  <div id="modalBg" class="fixed inset-0 bg-black bg-opacity-30 z-40 hidden"></div>
-  <div id="modal" class="fixed inset-0 flex items-center justify-center z-50 hidden">
-    <div class="bg-white rounded-lg p-6 w-full max-w-lg shadow-lg">
-      <h2 id="modalTitle" class="text-xl font-semibold mb-4"></h2>
-      <form id="productForm" class="space-y-3">
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="text-sm font-medium">Fecha</label>
-            <input type="date" name="date" required class="w-full border px-2 py-1 rounded" />
-          </div>
-          <div>
-            <label class="text-sm font-medium">Placa</label>
-            <input type="text" name="licensePlate" required class="w-full border px-2 py-1 rounded" />
-          </div>
-        </div>
-        <div>
-          <label class="text-sm font-medium">Marca-Anaquel</label>
-          <input type="text" name="brand" required class="w-full border px-2 py-1 rounded" />
-        </div>
-        <div>
-          <label class="text-sm font-medium">Tipo</label>
-          <input type="text" name="type" required class="w-full border px-2 py-1 rounded" />
-        </div>
-        <div>
-          <label class="text-sm font-medium">Producto</label>
-          <input type="text" name="product" required class="w-full border px-2 py-1 rounded" />
-        </div>
-        <div>
-          <label class="text-sm font-medium">Descripción</label>
-          <textarea name="description" rows="2" class="w-full border px-2 py-1 rounded"></textarea>
-        </div>
-        <div>
-          <label class="text-sm font-medium">Obervaciones</label>
-          <textarea name="observations" rows="2" class="w-full border px-2 py-1 rounded"></textarea>
-        </div>
-        <div>
-          <label class="text-sm font-medium">Proveedor</label>
-          <input type="text" name="supplier" required class="w-full border px-2 py-1 rounded" />
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="text-sm font-medium">Stock Final</label>
-            <input type="number" name="finalStock" required min="0" class="w-full border px-2 py-1 rounded" />
-          </div>
-          <div>
-            <label class="text-sm font-medium">Precio</label>
-            <input type="number" name="price" step="0.01" required min="0" class="w-full border px-2 py-1 rounded" />
-          </div>
-        </div>
-        <div class="flex justify-end space-x-2 pt-2">
-          <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Guardar</button>
-          <button type="button" id="cancelBtn" class="bg-gray-300 text-gray-800 px-4 py-2 rounded">Cancelar</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
   <!-- Modal importar Excel -->
   <div id="importModalBg" class="fixed inset-0 bg-black bg-opacity-30 z-40 hidden"></div>
   <div id="importModal" class="fixed inset-0 flex items-center justify-center z-50 hidden">
@@ -157,17 +96,34 @@
 
 <script>
   // REEMPLAZA ESTA LÍNEA CON TU API DE SHEETDB
-  const SHEETDB_API = "https://sheetdb.io/api/v1/yt1a1pctg3qca"; // <--- Pon aquí tu URL real
+  const SHEETDB_API = "https://sheetdb.io/api/v1/YOUR-API-ID"; // <--- Pon aquí tu URL real
 
-  // --- LOGIN SENCILLO ---
+  // --- LOGIN SENCILLO CON "SESIÓN ABIERTA" ---
   const USER = "admin";
   const PASS = "1234";
+
+  function isLoggedIn() {
+    return localStorage.getItem("sessionActiva") === "SI";
+  }
+  function setLoggedIn(state) {
+    if(state) localStorage.setItem("sessionActiva", "SI");
+    else localStorage.removeItem("sessionActiva");
+  }
+
+  // Mostrar login solo si no hay sesión guardada
+  if(isLoggedIn()) {
+    document.getElementById("loginModal").classList.add("hidden");
+    document.getElementById("mainContent").classList.remove("hidden");
+    fetchAndRender();
+  }
+
   document.getElementById("loginForm").onsubmit = function(e) {
     e.preventDefault();
     const form = e.target;
     const usuario = form.usuario.value.trim();
     const password = form.password.value;
     if (usuario === USER && password === PASS) {
+      setLoggedIn(true);
       document.getElementById("loginModal").classList.add("hidden");
       document.getElementById("mainContent").classList.remove("hidden");
       fetchAndRender();
@@ -179,9 +135,14 @@
     }
   };
 
+  // Botón cerrar sesión
+  document.getElementById("logoutBtn").onclick = function() {
+    setLoggedIn(false);
+    window.location.reload();
+  };
+
   // -------- FUNCIONES PARA LEER/ESCRIBIR EN SHEETDB --------
   let entries = [];
-  let editId = null;
 
   function fetchAndRender() {
     fetch(SHEETDB_API)
@@ -206,7 +167,6 @@
   }
 
   function updateEntry(entry, cb) {
-    // SheetDB no permite update por ID, se puede hacer por un campo único. Aquí buscamos por combinación de varios campos.
     fetch(`${SHEETDB_API}/search?date=${entry.date}&licensePlate=${entry.licensePlate}&product=${entry.product}`, {
       method: "PATCH",
       headers: {"Content-Type": "application/json"},
@@ -215,16 +175,9 @@
   }
 
   function deleteEntry(entry, cb) {
-    // Igual que update, SheetDB borra por campo único
     fetch(`${SHEETDB_API}/search?date=${entry.date}&licensePlate=${entry.licensePlate}&product=${entry.product}`, {
       method: "DELETE"
     }).then(() => fetchAndRender()).then(cb);
-  }
-
-  function clearAllEntries(cb) {
-    // SheetDB no permite "delete all" en la API gratis, hay que borrar uno por uno
-    let promises = entries.map(entry => deleteEntry(entry, ()=>{}));
-    Promise.all(promises).then(cb);
   }
 
   // ---- Render Tabla ----
@@ -263,14 +216,10 @@
         <td class="px-2 py-2">${entry.finalStock || 0}</td>
         <td class="px-2 py-2">$${Number(entry.price).toFixed(2)}</td>
         <td class="px-2 py-2 flex flex-col sm:flex-row space-y-1 sm:space-y-0 sm:space-x-2">
-          <button class="text-indigo-600 hover:underline editBtn" data-id="${entry.id}">Editar</button>
           <button class="text-red-600 hover:underline deleteBtn" data-id="${entry.id}">Eliminar</button>
         </td>
       `;
       tbody.appendChild(row);
-    });
-    document.querySelectorAll('.editBtn').forEach(btn => {
-      btn.onclick = () => openModal('edit', btn.dataset.id);
     });
     document.querySelectorAll('.deleteBtn').forEach(btn => {
       btn.onclick = () => {
@@ -281,56 +230,6 @@
       };
     });
   }
-
-  // ---- Modal agregar/editar ----
-  const modal = document.getElementById('modal');
-  const modalBg = document.getElementById('modalBg');
-  function openModal(type, id = null) {
-    modal.classList.remove('hidden');
-    modalBg.classList.remove('hidden');
-    document.getElementById('modalTitle').textContent = type === 'add' ? 'Agregar Nuevo Producto' : 'Editar Producto';
-    editId = id ? Number(id) : null;
-    const form = document.getElementById('productForm');
-    if (type === 'edit' && id) {
-      const entry = entries.find(e => e.id === Number(id));
-      for (let el of form.elements) {
-        if (el.name && entry.hasOwnProperty(el.name)) el.value = entry[el.name];
-      }
-    } else {
-      form.reset();
-    }
-  }
-  function closeModal() {
-    modal.classList.add('hidden');
-    modalBg.classList.add('hidden');
-    editId = null;
-  }
-  document.getElementById('addBtn').onclick = () => openModal('add');
-  document.getElementById('cancelBtn').onclick = closeModal;
-  modalBg.onclick = closeModal;
-
-  document.getElementById('productForm').onsubmit = function(e) {
-    e.preventDefault();
-    const data = Object.fromEntries(new FormData(this).entries());
-    data.finalStock = parseInt(data.finalStock);
-    data.price = parseFloat(data.price);
-    if (!data.date || !data.licensePlate || !data.brand || !data.product) {
-      alert('Por favor, completa todos los campos requeridos.');
-      return;
-    }
-    if (editId) {
-      // Editar
-      const entry = entries.find(e => e.id === editId);
-      updateEntry({...entry, ...data}, closeModal);
-    } else {
-      // Nuevo
-      addEntry(data, closeModal);
-    }
-  };
-
-  document.getElementById('searchInput').oninput = function() {
-    renderTable(this.value);
-  };
 
   // ---- Modal Importar Excel ----
   const importModal = document.getElementById('importModal');
@@ -384,13 +283,9 @@
     reader.readAsArrayBuffer(file);
   });
 
-  // ---- Botón borrar todo ----
-  document.getElementById('clearBtn').onclick = function() {
-    if (confirm('¿Estás seguro de que deseas borrar TODOS los productos?')) {
-      clearAllEntries(fetchAndRender);
-    }
+  document.getElementById('searchInput').oninput = function() {
+    renderTable(this.value);
   };
 </script>
 </body>
 </html>
-
