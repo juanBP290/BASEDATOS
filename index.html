@@ -1,445 +1,291 @@
-import React, { useState, useEffect } from 'react';
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Base de Datos de Productos</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Estilos modernos con Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
 
-const App = () => {
-  // Sample data
-  const initialEntries = [
-    {
-      id: 1,
-      date: '2023-09-01',
-      licensePlate: 'ABC123',
-      brand: 'Coca-Cola',
-      type: 'Bebida',
-      product: 'Coca-Cola 2L',
-      description: 'Refresco de cola',
-      observations: 'En buen estado',
-      supplier: 'Distribuidora ABC',
-      finalStock: 50,
-      price: 2.99,
-    },
-    {
-      id: 2,
-      date: '2023-09-02',
-      licensePlate: 'XYZ789',
-      brand: 'Pepsi',
-      type: 'Bebida',
-      product: 'Pepsi 2L',
-      description: 'Refresco de cola',
-      observations: 'En buen estado',
-      supplier: 'Distribuidora XYZ',
-      finalStock: 40,
-      price: 2.79,
-    },
-    {
-      id: 3,
-      date: '2023-09-03',
-      licensePlate: 'DEF456',
-      brand: 'Detergente',
-      type: 'Limpieza',
-      product: 'Detergente Líquido',
-      description: 'Para ropa',
-      observations: 'Promoción por tiempo limitado',
-      supplier: 'Suministros S.A.',
-      finalStock: 25,
-      price: 5.49,
-    },
-  ];
+  <!-- Header -->
+  <header class="bg-white shadow-sm">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center">
+      <h1 class="text-2xl font-bold text-gray-900 mb-3 sm:mb-0">Base de Datos de Productos</h1>
+      <div class="flex space-x-2">
+        <button id="addBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors duration-200">
+          Nuevo Producto
+        </button>
+      </div>
+    </div>
+    <div class="max-w-5xl mx-auto px-4 pb-4">
+      <input id="searchInput" type="text" placeholder="Buscar..." class="w-full pl-3 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+    </div>
+  </header>
 
-  const [entries, setEntries] = useState(() => {
-    const savedEntries = localStorage.getItem('databaseEntries');
-    return savedEntries ? JSON.parse(savedEntries) : initialEntries;
-  });
+  <!-- Main Content -->
+  <main class="max-w-5xl mx-auto px-4 py-6">
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200" id="productsTable">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-2 py-2 text-xs text-left text-gray-500">FECHA</th>
+              <th class="px-2 py-2 text-xs text-left text-gray-500">PLACA</th>
+              <th class="px-2 py-2 text-xs text-left text-gray-500">MARCA/ANAQUEL</th>
+              <th class="px-2 py-2 text-xs text-left text-gray-500">TIPO</th>
+              <th class="px-2 py-2 text-xs text-left text-gray-500">PRODUCTO</th>
+              <th class="px-2 py-2 text-xs text-left text-gray-500">DESCRIPCIÓN</th>
+              <th class="px-2 py-2 text-xs text-left text-gray-500">OBSERVACIONES</th>
+              <th class="px-2 py-2 text-xs text-left text-gray-500">PROVEEDOR</th>
+              <th class="px-2 py-2 text-xs text-left text-gray-500">STOCK FINAL</th>
+              <th class="px-2 py-2 text-xs text-left text-gray-500">PRECIO</th>
+              <th class="px-2 py-2 text-xs text-left text-gray-500">ACCIONES</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody" class="bg-white divide-y divide-gray-200">
+            <!-- Se llena con JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filteredEntries, setFilteredEntries] = useState(entries);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalType, setModalType] = useState(''); // 'add', 'edit', 'import'
-  const [currentEntry, setCurrentEntry] = useState(null);
-  const [formData, setFormData] = useState({
-    date: '',
-    licensePlate: '',
-    brand: '',
-    type: '',
-    product: '',
-    description: '',
-    observations: '',
-    supplier: '',
-    finalStock: '',
-    price: '',
-  });
+  <!-- Modal -->
+  <div id="modalBg" class="fixed inset-0 bg-black bg-opacity-30 z-40 hidden"></div>
+  <div id="modal" class="fixed inset-0 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg p-6 w-full max-w-lg shadow-lg">
+      <h2 id="modalTitle" class="text-xl font-semibold mb-4"></h2>
+      <form id="productForm" class="space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-sm font-medium">Fecha</label>
+            <input type="date" name="date" required class="w-full border px-2 py-1 rounded" />
+          </div>
+          <div>
+            <label class="text-sm font-medium">Placa</label>
+            <input type="text" name="licensePlate" required class="w-full border px-2 py-1 rounded" />
+          </div>
+        </div>
+        <div>
+          <label class="text-sm font-medium">Marca/Anaquel</label>
+          <input type="text" name="brand" required class="w-full border px-2 py-1 rounded" />
+        </div>
+        <div>
+          <label class="text-sm font-medium">Tipo</label>
+          <input type="text" name="type" required class="w-full border px-2 py-1 rounded" />
+        </div>
+        <div>
+          <label class="text-sm font-medium">Producto</label>
+          <input type="text" name="product" required class="w-full border px-2 py-1 rounded" />
+        </div>
+        <div>
+          <label class="text-sm font-medium">Descripción</label>
+          <textarea name="description" rows="2" class="w-full border px-2 py-1 rounded"></textarea>
+        </div>
+        <div>
+          <label class="text-sm font-medium">Observaciones</label>
+          <textarea name="observations" rows="2" class="w-full border px-2 py-1 rounded"></textarea>
+        </div>
+        <div>
+          <label class="text-sm font-medium">Proveedor</label>
+          <input type="text" name="supplier" required class="w-full border px-2 py-1 rounded" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-sm font-medium">Stock Final</label>
+            <input type="number" name="finalStock" required min="0" class="w-full border px-2 py-1 rounded" />
+          </div>
+          <div>
+            <label class="text-sm font-medium">Precio</label>
+            <input type="number" name="price" step="0.01" required min="0" class="w-full border px-2 py-1 rounded" />
+          </div>
+        </div>
+        <div class="flex justify-end space-x-2 pt-2">
+          <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Guardar</button>
+          <button type="button" id="cancelBtn" class="bg-gray-300 text-gray-800 px-4 py-2 rounded">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
-  // Save to localStorage
-  useEffect(() => {
-    localStorage.setItem('databaseEntries', JSON.stringify(entries));
-  }, [entries]);
+  <!-- Script principal -->
+  <script>
+    // Datos iniciales
+    const initialEntries = [
+      {
+        id: 1,
+        date: '2023-09-01',
+        licensePlate: 'ABC123',
+        brand: 'Coca-Cola',
+        type: 'Bebida',
+        product: 'Coca-Cola 2L',
+        description: 'Refresco de cola',
+        observations: 'En buen estado',
+        supplier: 'Distribuidora ABC',
+        finalStock: 50,
+        price: 2.99,
+      },
+      {
+        id: 2,
+        date: '2023-09-02',
+        licensePlate: 'XYZ789',
+        brand: 'Pepsi',
+        type: 'Bebida',
+        product: 'Pepsi 2L',
+        description: 'Refresco de cola',
+        observations: 'En buen estado',
+        supplier: 'Distribuidora XYZ',
+        finalStock: 40,
+        price: 2.79,
+      },
+      {
+        id: 3,
+        date: '2023-09-03',
+        licensePlate: 'DEF456',
+        brand: 'Detergente',
+        type: 'Limpieza',
+        product: 'Detergente Líquido',
+        description: 'Para ropa',
+        observations: 'Promoción por tiempo limitado',
+        supplier: 'Suministros S.A.',
+        finalStock: 25,
+        price: 5.49,
+      },
+    ];
 
-  // Filter entries based on search term
-  useEffect(() => {
-    if (searchTerm.trim() === '') {
-      setFilteredEntries(entries);
-    } else {
-      const term = searchTerm.toLowerCase();
-      setFilteredEntries(entries.filter(entry => 
-        entry.date.includes(term) ||
-        entry.licensePlate.toLowerCase().includes(term) ||
-        entry.brand.toLowerCase().includes(term) ||
-        entry.type.toLowerCase().includes(term) ||
-        entry.product.toLowerCase().includes(term) ||
-        entry.description.toLowerCase().includes(term) ||
-        entry.observations.toLowerCase().includes(term) ||
-        entry.supplier.toLowerCase().includes(term) ||
-        entry.finalStock.toString().includes(term) ||
-        entry.price.toString().includes(term)
-      ));
+    // Manejo de LocalStorage
+    function loadEntries() {
+      const data = localStorage.getItem('databaseEntries');
+      return data ? JSON.parse(data) : initialEntries;
     }
-  }, [searchTerm, entries]);
+    function saveEntries(entries) {
+      localStorage.setItem('databaseEntries', JSON.stringify(entries));
+    }
 
-  const openModal = (type, entry = null) => {
-    setModalType(type);
-    if (type === 'edit' && entry) {
-      setCurrentEntry(entry);
-      setFormData(entry);
-    } else {
-      setFormData({
-        date: '',
-        licensePlate: '',
-        brand: '',
-        type: '',
-        product: '',
-        description: '',
-        observations: '',
-        supplier: '',
-        finalStock: '',
-        price: '',
+    let entries = loadEntries();
+    let editId = null;
+
+    // Renderiza la tabla de productos
+    function renderTable(filter = '') {
+      const tbody = document.getElementById('tableBody');
+      tbody.innerHTML = '';
+      const term = filter.trim().toLowerCase();
+      const filtered = term
+        ? entries.filter(e =>
+            Object.values(e).some(val =>
+              String(val).toLowerCase().includes(term)
+            )
+          )
+        : entries;
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="11" class="px-6 py-4 text-center text-gray-500">
+              ${term ? 'No se encontraron resultados' : 'No hay productos en la base de datos'}
+            </td>
+          </tr>
+        `;
+        return;
+      }
+      filtered.forEach(entry => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td class="px-2 py-2">${entry.date}</td>
+          <td class="px-2 py-2">${entry.licensePlate}</td>
+          <td class="px-2 py-2">${entry.brand}</td>
+          <td class="px-2 py-2">${entry.type}</td>
+          <td class="px-2 py-2">${entry.product}</td>
+          <td class="px-2 py-2">${entry.description}</td>
+          <td class="px-2 py-2">${entry.observations}</td>
+          <td class="px-2 py-2">${entry.supplier}</td>
+          <td class="px-2 py-2">${entry.finalStock}</td>
+          <td class="px-2 py-2">$${Number(entry.price).toFixed(2)}</td>
+          <td class="px-2 py-2 flex flex-col sm:flex-row space-y-1 sm:space-y-0 sm:space-x-2">
+            <button class="text-indigo-600 hover:underline editBtn" data-id="${entry.id}">Editar</button>
+            <button class="text-red-600 hover:underline deleteBtn" data-id="${entry.id}">Eliminar</button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+      // Asignar eventos a botones
+      document.querySelectorAll('.editBtn').forEach(btn => {
+        btn.onclick = () => openModal('edit', btn.dataset.id);
+      });
+      document.querySelectorAll('.deleteBtn').forEach(btn => {
+        btn.onclick = () => handleDelete(btn.dataset.id);
       });
     }
-    setIsModalOpen(true);
-  };
 
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setModalType('');
-    setCurrentEntry(null);
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (modalType === 'add') {
-      const newEntry = {
-        id: Date.now(),
-        ...formData,
-        finalStock: parseInt(formData.finalStock),
-        price: parseFloat(formData.price),
-      };
-      setEntries(prev => [...prev, newEntry]);
-    } else if (modalType === 'edit') {
-      const updatedEntry = {
-        ...currentEntry,
-        ...formData,
-        finalStock: parseInt(formData.finalStock),
-        price: parseFloat(formData.price),
-      };
-      setEntries(prev => prev.map(entry => 
-        entry.id === currentEntry.id ? updatedEntry : entry
-      ));
+    // Modal
+    const modal = document.getElementById('modal');
+    const modalBg = document.getElementById('modalBg');
+    function openModal(type, id = null) {
+      modal.classList.remove('hidden');
+      modalBg.classList.remove('hidden');
+      document.getElementById('modalTitle').textContent = type === 'add' ? 'Agregar Nuevo Producto' : 'Editar Producto';
+      editId = id ? Number(id) : null;
+      // Rellenar formulario
+      const form = document.getElementById('productForm');
+      if (type === 'edit' && id) {
+        const entry = entries.find(e => e.id === Number(id));
+        for (let el of form.elements) {
+          if (el.name && entry.hasOwnProperty(el.name)) el.value = entry[el.name];
+        }
+      } else {
+        form.reset();
+      }
     }
-    closeModal();
-  };
-
-  const handleDelete = (id) => {
-    if (window.confirm('¿Estás seguro de que quieres eliminar este producto?')) {
-      setEntries(prev => prev.filter(entry => entry.id !== id));
+    function closeModal() {
+      modal.classList.add('hidden');
+      modalBg.classList.add('hidden');
+      editId = null;
     }
-  };
 
-  return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-900">Base de Datos de Productos</h1>
-            <div className="flex space-x-4">
-              <button 
-                onClick={() => openModal('import')}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center transition-colors duration-200"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-                Importar Excel
-              </button>
-              <button 
-                onClick={() => openModal('add')}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center transition-colors duration-200"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-                </svg>
-                Nuevo Producto
-              </button>
-            </div>
-          </div>
-          
-          {/* Search Bar */}
-          <div className="mt-4">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Buscar..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-              <div className="absolute left-3 top-2.5 text-gray-400">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-                </svg>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+    document.getElementById('addBtn').onclick = () => openModal('add');
+    document.getElementById('cancelBtn').onclick = closeModal;
+    modalBg.onclick = closeModal;
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">FECHA</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PLACA</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">MARCA/ANAQUEL</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TIPO</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PRODUCTO</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DESCRIPCION</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">OBERVACIONES</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PROVEEDOR</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">STOCK FINAL</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PRECIO</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ACCIONES</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredEntries.length === 0 ? (
-                  <tr>
-                    <td colSpan="11" className="px-6 py-4 text-center text-gray-500">
-                      {searchTerm.trim() === '' ? 'No hay productos en la base de datos' : 'No se encontraron resultados'}
-                    </td>
-                  </tr>
-                ) : (
-                  filteredEntries.map((entry) => (
-                    <tr key={entry.id} className="hover:bg-gray-50 transition-colors duration-150">
-                      <td className="px-6 py-4 whitespace-nowrap">{entry.date}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{entry.licensePlate}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{entry.brand}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{entry.type}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{entry.product}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{entry.description}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{entry.observations}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{entry.supplier}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{entry.finalStock}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">${entry.price.toFixed(2)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button 
-                          onClick={() => openModal('edit', entry)} 
-                          className="text-indigo-600 hover:text-indigo-900 mr-3 transition-colors duration-150"
-                        >
-                          Editar
-                        </button>
-                        <button 
-                          onClick={() => handleDelete(entry.id)} 
-                          className="text-red-600 hover:text-red-900 transition-colors duration-150"
-                        >
-                          Eliminar
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </main>
+    // Guardar producto
+    document.getElementById('productForm').onsubmit = function(e) {
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(this).entries());
+      data.finalStock = parseInt(data.finalStock);
+      data.price = parseFloat(data.price);
+      if (!data.date || !data.licensePlate || !data.brand || !data.product) {
+        alert('Por favor, completa todos los campos requeridos.');
+        return;
+      }
+      if (editId) {
+        // Editar
+        entries = entries.map(e => e.id === editId ? {...e, ...data, id: editId} : e);
+      } else {
+        // Nuevo
+        const newId = entries.length ? Math.max(...entries.map(e => e.id)) + 1 : 1;
+        entries.push({...data, id: newId});
+      }
+      saveEntries(entries);
+      closeModal();
+      renderTable(document.getElementById('searchInput').value);
+    };
 
-      {/* Modal */}
-      {isModalOpen && (
-        <div className="fixed z-10 inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onClick={closeModal}></div>
-            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                <div className="sm:flex sm:items-start">
-                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                    <h3 className="text-lg leading-6 font-medium text-gray-900" id="modal-title">
-                      {modalType === 'add' && 'Agregar Nuevo Producto'}
-                      {modalType === 'edit' && 'Editar Producto'}
-                      {modalType === 'import' && 'Importar desde Excel'}
-                    </h3>
-                    <div className="mt-4">
-                      {modalType === 'import' ? (
-                        <div>
-                          <p className="text-sm text-gray-500 mb-4">
-                            Seleccione un archivo Excel (.xlsx) para importar productos.
-                          </p>
-                          <input
-                            type="file"
-                            accept=".xlsx, .xls"
-                            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                          />
-                        </div>
-                      ) : (
-                        <form className="space-y-4" onSubmit={handleSubmit}>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label htmlFor="date" className="block text-sm font-medium text-gray-700">Fecha</label>
-                              <input
-                                type="date"
-                                id="date"
-                                name="date"
-                                value={formData.date}
-                                onChange={handleInputChange}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                              />
-                            </div>
-                            <div>
-                              <label htmlFor="licensePlate" className="block text-sm font-medium text-gray-700">Placa</label>
-                              <input
-                                type="text"
-                                id="licensePlate"
-                                name="licensePlate"
-                                value={formData.licensePlate}
-                                onChange={handleInputChange}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                              />
-                            </div>
-                          </div>
-                          <div>
-                            <label htmlFor="brand" className="block text-sm font-medium text-gray-700">Marca/Anaquel</label>
-                            <input
-                              type="text"
-                              id="brand"
-                              name="brand"
-                              value={formData.brand}
-                              onChange={handleInputChange}
-                              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                            />
-                          </div>
-                          <div>
-                            <label htmlFor="type" className="block text-sm font-medium text-gray-700">Tipo</label>
-                            <input
-                              type="text"
-                              id="type"
-                              name="type"
-                              value={formData.type}
-                              onChange={handleInputChange}
-                              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                            />
-                          </div>
-                          <div>
-                            <label htmlFor="product" className="block text-sm font-medium text-gray-700">Producto</label>
-                            <input
-                              type="text"
-                              id="product"
-                              name="product"
-                              value={formData.product}
-                              onChange={handleInputChange}
-                              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                            />
-                          </div>
-                          <div>
-                            <label htmlFor="description" className="block text-sm font-medium text-gray-700">Descripción</label>
-                            <textarea
-                              id="description"
-                              name="description"
-                              rows="3"
-                              value={formData.description}
-                              onChange={handleInputChange}
-                              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                            ></textarea>
-                          </div>
-                          <div>
-                            <label htmlFor="observations" className="block text-sm font-medium text-gray-700">Observaciones</label>
-                            <textarea
-                              id="observations"
-                              name="observations"
-                              rows="3"
-                              value={formData.observations}
-                              onChange={handleInputChange}
-                              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                            ></textarea>
-                          </div>
-                          <div>
-                            <label htmlFor="supplier" className="block text-sm font-medium text-gray-700">Proveedor</label>
-                            <input
-                              type="text"
-                              id="supplier"
-                              name="supplier"
-                              value={formData.supplier}
-                              onChange={handleInputChange}
-                              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                            />
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label htmlFor="finalStock" className="block text-sm font-medium text-gray-700">Stock Final</label>
-                              <input
-                                type="number"
-                                id="finalStock"
-                                name="finalStock"
-                                value={formData.finalStock}
-                                onChange={handleInputChange}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                              />
-                            </div>
-                            <div>
-                              <label htmlFor="price" className="block text-sm font-medium text-gray-700">Precio</label>
-                              <input
-                                type="number"
-                                id="price"
-                                name="price"
-                                step="0.01"
-                                value={formData.price}
-                                onChange={handleInputChange}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                              />
-                            </div>
-                          </div>
-                        </form>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                <button
-                  type="button"
-                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm transition-colors duration-150"
-                  onClick={handleSubmit}
-                >
-                  {modalType === 'import' ? 'Importar' : 'Guardar'}
-                </button>
-                <button
-                  type="button"
-                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm transition-colors duration-150"
-                  onClick={closeModal}
-                >
-                  Cancelar
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
+    // Eliminar producto
+    function handleDelete(id) {
+      if (confirm('¿Estás seguro de eliminar este producto?')) {
+        entries = entries.filter(e => e.id !== Number(id));
+        saveEntries(entries);
+        renderTable(document.getElementById('searchInput').value);
+      }
+    }
 
-export default App;
+    // Buscar
+    document.getElementById('searchInput').oninput = function() {
+      renderTable(this.value);
+    };
+
+    // Inicializa tabla
+    renderTable();
+  </script>
+</body>
+</html>
