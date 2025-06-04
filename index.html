@@ -14,6 +14,21 @@
     .scroll-table-x::-webkit-scrollbar {
       height: 8px;
     }
+    .top-scrollbar {
+      height: 14px;
+      margin-bottom: -14px;
+      background: #fff;
+      z-index: 10;
+      position: sticky;
+      top: 0;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+    }
+    .fake-scroll-content {
+      width: 1800px;
+      height: 1px;
+    }
   </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -49,18 +64,18 @@
     <!-- DOS BARRAS DE BUSQUEDA -->
     <div class="max-w-5xl mx-auto px-4 pb-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
       <input id="searchInput" type="text" placeholder="Buscar en toda la base de datos..." class="w-full pl-3 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
-      <input id="searchCodigo" type="text" placeholder="Buscar solo por CODIGO, PRODUCTO, MARCA..." class="w-full pl-3 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" />
+      <input id="searchCodigo" type="text" placeholder="Buscar solo por CODIGO, PRODUCTO, MARCA, DESCRIPCIÓN..." class="w-full pl-3 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" />
     </div>
   </header>
 
   <main class="max-w-5xl mx-auto px-4 py-6">
     <!-- Scroll horizontal arriba -->
-    <div class="scroll-table-x mb-2" id="scrollTop">
-      <div style="width:2000px; height:1px;"></div>
+    <div class="top-scrollbar scroll-table-x" id="scrollTop">
+      <div class="fake-scroll-content"></div>
     </div>
     <div class="bg-white shadow overflow-hidden sm:rounded-lg">
       <div class="scroll-table-x" id="scrollBottom">
-        <table class="min-w-full divide-y divide-gray-200" id="productsTable">
+        <table class="min-w-full divide-y divide-gray-200" id="productsTable" style="min-width: 1800px;">
           <thead class="bg-gray-50">
             <tr>
               <th class="px-2 py-2 text-xs text-left text-gray-500">CODIGO</th>
@@ -138,8 +153,9 @@
         entries = data.map((e, idx) => ({
           ...e,
           id: idx + 1,
-          finalStock: parseInt(e.finalStock) || 0,
-          price: parseFloat(e.price) || 0
+          finalStock: e.finalStock ? parseInt(e.finalStock) : "",
+          // Corregido: solo muestra precio si es número y mayor a cero, si no deja vacío
+          price: e.price && !isNaN(parseFloat(e.price)) ? parseFloat(e.price) : ""
         }));
         renderTable();
       });
@@ -165,14 +181,15 @@
       );
     }
 
-    // Segundo filtro: búsqueda por codigo, codigoproducto, marcaanaquel, product
+    // Segundo filtro: búsqueda por codigo, codigoproducto, marcaanaquel, product, description
     if(search2.trim()) {
       const t2 = search2.trim().toLowerCase();
       filtered = filtered.filter(e =>
         (e.codigo && e.codigo.toLowerCase().includes(t2)) ||
         (e.codigoproducto && e.codigoproducto.toLowerCase().includes(t2)) ||
         (e.marcaanaquel && e.marcaanaquel.toLowerCase().includes(t2)) ||
-        (e.product && e.product.toLowerCase().includes(t2))
+        (e.product && e.product.toLowerCase().includes(t2)) ||
+        (e.description && e.description.toLowerCase().includes(t2))
       );
     }
 
@@ -199,8 +216,8 @@
         <td class="px-2 py-2">${entry.description || ""}</td>
         <td class="px-2 py-2">${entry.observations || ""}</td>
         <td class="px-2 py-2">${entry.supplier || ""}</td>
-        <td class="px-2 py-2">${entry.finalStock || 0}</td>
-        <td class="px-2 py-2">S/${Number(entry.price).toFixed(2)}</td>
+        <td class="px-2 py-2">${entry.finalStock !== undefined && entry.finalStock !== null && entry.finalStock !== "" ? entry.finalStock : ""}</td>
+        <td class="px-2 py-2">${entry.price !== "" ? "S/" + Number(entry.price).toFixed(2) : ""}</td>
       `;
       tbody.appendChild(row);
     });
@@ -236,4 +253,5 @@
 </script>
 </body>
 </html>
+
 
