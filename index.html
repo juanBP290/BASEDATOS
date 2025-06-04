@@ -9,6 +9,28 @@
 </head>
 <body class="bg-gray-100 min-h-screen">
 
+<!-- Login Modal -->
+<div id="loginModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+  <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-xs">
+    <h2 class="text-xl font-semibold mb-4 text-center">Acceso</h2>
+    <form id="loginForm" class="space-y-4">
+      <div>
+        <label class="text-sm font-medium">Usuario</label>
+        <input type="text" name="usuario" required class="w-full border px-2 py-1 rounded" autocomplete="off"/>
+      </div>
+      <div>
+        <label class="text-sm font-medium">Contraseña</label>
+        <input type="password" name="password" required class="w-full border px-2 py-1 rounded"/>
+      </div>
+      <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Entrar</button>
+      <p id="loginError" class="text-red-600 text-center text-sm hidden">Usuario o contraseña incorrectos</p>
+    </form>
+  </div>
+</div>
+
+<!-- El resto de la web: estará oculto hasta login -->
+<div id="mainContent" class="hidden">
+
   <!-- Header -->
   <header class="bg-white shadow-sm">
     <div class="max-w-5xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center">
@@ -131,187 +153,235 @@
     </div>
   </div>
 
-  <script>
-    // ---- Datos iniciales y LocalStorage ----
-    const initialEntries = [];
-    function loadEntries() {
-      const data = localStorage.getItem('databaseEntries');
-      return data ? JSON.parse(data) : initialEntries;
-    }
-    function saveEntries(entries) {
-      localStorage.setItem('databaseEntries', JSON.stringify(entries));
-    }
-    let entries = loadEntries();
-    let editId = null;
+</div><!-- Fin del mainContent -->
 
-    // ---- Render Tabla ----
-    function renderTable(filter = '') {
-      const tbody = document.getElementById('tableBody');
-      tbody.innerHTML = '';
-      const term = filter.trim().toLowerCase();
-      const filtered = term
-        ? entries.filter(e =>
-            Object.values(e).some(val =>
-              String(val).toLowerCase().includes(term)
-            )
+<script>
+  // --- LOGIN SENCILLO ---
+  const USER = "admin";
+  const PASS = "1234";
+  document.getElementById("loginForm").onsubmit = function(e) {
+    e.preventDefault();
+    const form = e.target;
+    const usuario = form.usuario.value.trim();
+    const password = form.password.value;
+    if (usuario === USER && password === PASS) {
+      document.getElementById("loginModal").classList.add("hidden");
+      document.getElementById("mainContent").classList.remove("hidden");
+    } else {
+      document.getElementById("loginError").classList.remove("hidden");
+      setTimeout(() => {
+        document.getElementById("loginError").classList.add("hidden");
+      }, 2000);
+    }
+  };
+
+  // ---- Datos iniciales y LocalStorage ----
+  const initialEntries = [];
+  function loadEntries() {
+    const data = localStorage.getItem('databaseEntries');
+    return data ? JSON.parse(data) : initialEntries;
+  }
+  function saveEntries(entries) {
+    localStorage.setItem('databaseEntries', JSON.stringify(entries));
+  }
+  let entries = loadEntries();
+  let editId = null;
+
+  // --- Utilidad para convertir serial de Excel a fecha string YYYY-MM-DD ---
+  function excelDateToString(excelSerial) {
+    if (typeof excelSerial === "number") {
+      // Adaptado para Excel fechas (base 1900, días)
+      const utc_days = Math.floor(excelSerial - 25569);
+      const date = new Date(utc_days * 86400 * 1000);
+      // Corrige desfase horario
+      date.setMinutes(date.getMinutes() + date.getTimezoneOffset());
+      // Formato YYYY-MM-DD
+      return date.toISOString().split('T')[0];
+    }
+    // Si ya viene string tipo fecha, devolver como está
+    return excelSerial;
+  }
+
+  // ---- Render Tabla ----
+  function renderTable(filter = '') {
+    const tbody = document.getElementById('tableBody');
+    tbody.innerHTML = '';
+    const term = filter.trim().toLowerCase();
+    const filtered = term
+      ? entries.filter(e =>
+          Object.values(e).some(val =>
+            String(val).toLowerCase().includes(term)
           )
-        : entries;
-      if (filtered.length === 0) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="11" class="px-6 py-4 text-center text-gray-500">
-              ${term ? 'No se encontraron resultados' : 'No hay productos en la base de datos'}
-            </td>
-          </tr>
-        `;
-        return;
-      }
-      filtered.forEach(entry => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td class="px-2 py-2">${entry.date}</td>
-          <td class="px-2 py-2">${entry.licensePlate}</td>
-          <td class="px-2 py-2">${entry.brand}</td>
-          <td class="px-2 py-2">${entry.type}</td>
-          <td class="px-2 py-2">${entry.product}</td>
-          <td class="px-2 py-2">${entry.description}</td>
-          <td class="px-2 py-2">${entry.observations}</td>
-          <td class="px-2 py-2">${entry.supplier}</td>
-          <td class="px-2 py-2">${entry.finalStock}</td>
-          <td class="px-2 py-2">$${Number(entry.price).toFixed(2)}</td>
-          <td class="px-2 py-2 flex flex-col sm:flex-row space-y-1 sm:space-y-0 sm:space-x-2">
-            <button class="text-indigo-600 hover:underline editBtn" data-id="${entry.id}">Editar</button>
-            <button class="text-red-600 hover:underline deleteBtn" data-id="${entry.id}">Eliminar</button>
+        )
+      : entries;
+    if (filtered.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="11" class="px-6 py-4 text-center text-gray-500">
+            ${term ? 'No se encontraron resultados' : 'No hay productos en la base de datos'}
           </td>
-        `;
-        tbody.appendChild(row);
-      });
-      document.querySelectorAll('.editBtn').forEach(btn => {
-        btn.onclick = () => openModal('edit', btn.dataset.id);
-      });
-      document.querySelectorAll('.deleteBtn').forEach(btn => {
-        btn.onclick = () => handleDelete(btn.dataset.id);
-      });
+        </tr>
+      `;
+      return;
     }
-
-    // ---- Modal agregar/editar ----
-    const modal = document.getElementById('modal');
-    const modalBg = document.getElementById('modalBg');
-    function openModal(type, id = null) {
-      modal.classList.remove('hidden');
-      modalBg.classList.remove('hidden');
-      document.getElementById('modalTitle').textContent = type === 'add' ? 'Agregar Nuevo Producto' : 'Editar Producto';
-      editId = id ? Number(id) : null;
-      const form = document.getElementById('productForm');
-      if (type === 'edit' && id) {
-        const entry = entries.find(e => e.id === Number(id));
-        for (let el of form.elements) {
-          if (el.name && entry.hasOwnProperty(el.name)) el.value = entry[el.name];
-        }
-      } else {
-        form.reset();
-      }
-    }
-    function closeModal() {
-      modal.classList.add('hidden');
-      modalBg.classList.add('hidden');
-      editId = null;
-    }
-    document.getElementById('addBtn').onclick = () => openModal('add');
-    document.getElementById('cancelBtn').onclick = closeModal;
-    modalBg.onclick = closeModal;
-
-    document.getElementById('productForm').onsubmit = function(e) {
-      e.preventDefault();
-      const data = Object.fromEntries(new FormData(this).entries());
-      data.finalStock = parseInt(data.finalStock);
-      data.price = parseFloat(data.price);
-      if (!data.date || !data.licensePlate || !data.brand || !data.product) {
-        alert('Por favor, completa todos los campos requeridos.');
-        return;
-      }
-      if (editId) {
-        entries = entries.map(e => e.id === editId ? {...e, ...data, id: editId} : e);
-      } else {
-        const newId = entries.length ? Math.max(...entries.map(e => e.id)) + 1 : 1;
-        entries.push({...data, id: newId});
-      }
-      saveEntries(entries);
-      closeModal();
-      renderTable(document.getElementById('searchInput').value);
-    };
-
-    function handleDelete(id) {
-      if (confirm('¿Estás seguro de eliminar este producto?')) {
-        entries = entries.filter(e => e.id !== Number(id));
-        saveEntries(entries);
-        renderTable(document.getElementById('searchInput').value);
-      }
-    }
-
-    document.getElementById('searchInput').oninput = function() {
-      renderTable(this.value);
-    };
-    renderTable();
-
-    // ---- Modal Importar Excel ----
-    const importModal = document.getElementById('importModal');
-    const importModalBg = document.getElementById('importModalBg');
-    document.getElementById('importBtn').onclick = () => {
-      importModal.classList.remove('hidden');
-      importModalBg.classList.remove('hidden');
-    };
-    document.getElementById('importCloseBtn').onclick = closeImportModal;
-    importModalBg.onclick = closeImportModal;
-    function closeImportModal() {
-      importModal.classList.add('hidden');
-      importModalBg.classList.add('hidden');
-      document.getElementById('excelInput').value = '';
-    }
-
-    // ---- Lógica de importación de Excel ----
-    document.getElementById('excelInput').addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(ev) {
-        const data = new Uint8Array(ev.target.result);
-        const workbook = XLSX.read(data, {type: 'array'});
-        const sheetName = workbook.SheetNames[0];
-        const sheet = workbook.Sheets[sheetName];
-        const imported = XLSX.utils.sheet_to_json(sheet);
-        let newEntries = imported.map((row, idx) => {
-          return {
-            id: Date.now() + idx,
-            date: row.date || '',
-            licensePlate: row.licensePlate || '',
-            brand: row.brand || '',
-            type: row.type || '',
-            product: row.product || '',
-            description: row.description || '',
-            observations: row.observations || '',
-            supplier: row.supplier || '',
-            finalStock: parseInt(row.finalStock) || 0,
-            price: parseFloat(row.price) || 0
-          };
-        });
-        entries = entries.concat(newEntries);
-        saveEntries(entries);
-        renderTable(document.getElementById('searchInput').value);
-        closeImportModal();
-        alert('Productos importados correctamente');
-      };
-      reader.readAsArrayBuffer(file);
+    filtered.forEach(entry => {
+      const row = document.createElement('tr');
+      // Mostrar fecha como texto (no número serial)
+      let fechaStr = excelDateToString(entry.date);
+      row.innerHTML = `
+        <td class="px-2 py-2">${fechaStr}</td>
+        <td class="px-2 py-2">${entry.licensePlate}</td>
+        <td class="px-2 py-2">${entry.brand}</td>
+        <td class="px-2 py-2">${entry.type}</td>
+        <td class="px-2 py-2">${entry.product}</td>
+        <td class="px-2 py-2">${entry.description}</td>
+        <td class="px-2 py-2">${entry.observations}</td>
+        <td class="px-2 py-2">${entry.supplier}</td>
+        <td class="px-2 py-2">${entry.finalStock}</td>
+        <td class="px-2 py-2">$${Number(entry.price).toFixed(2)}</td>
+        <td class="px-2 py-2 flex flex-col sm:flex-row space-y-1 sm:space-y-0 sm:space-x-2">
+          <button class="text-indigo-600 hover:underline editBtn" data-id="${entry.id}">Editar</button>
+          <button class="text-red-600 hover:underline deleteBtn" data-id="${entry.id}">Eliminar</button>
+        </td>
+      `;
+      tbody.appendChild(row);
     });
+    document.querySelectorAll('.editBtn').forEach(btn => {
+      btn.onclick = () => openModal('edit', btn.dataset.id);
+    });
+    document.querySelectorAll('.deleteBtn').forEach(btn => {
+      btn.onclick = () => handleDelete(btn.dataset.id);
+    });
+  }
 
-    // ---- Botón borrar todo ----
-    document.getElementById('clearBtn').onclick = function() {
-      if (confirm('¿Estás seguro de que deseas borrar TODOS los productos?')) {
-        entries = [];
-        saveEntries(entries);
-        renderTable();
+  // ---- Modal agregar/editar ----
+  const modal = document.getElementById('modal');
+  const modalBg = document.getElementById('modalBg');
+  function openModal(type, id = null) {
+    modal.classList.remove('hidden');
+    modalBg.classList.remove('hidden');
+    document.getElementById('modalTitle').textContent = type === 'add' ? 'Agregar Nuevo Producto' : 'Editar Producto';
+    editId = id ? Number(id) : null;
+    const form = document.getElementById('productForm');
+    if (type === 'edit' && id) {
+      const entry = entries.find(e => e.id === Number(id));
+      for (let el of form.elements) {
+        if (el.name && entry.hasOwnProperty(el.name)) {
+          if (el.name === "date") {
+            el.value = excelDateToString(entry.date);
+          } else {
+            el.value = entry[el.name];
+          }
+        }
       }
+    } else {
+      form.reset();
+    }
+  }
+  function closeModal() {
+    modal.classList.add('hidden');
+    modalBg.classList.add('hidden');
+    editId = null;
+  }
+  document.getElementById('addBtn').onclick = () => openModal('add');
+  document.getElementById('cancelBtn').onclick = closeModal;
+  modalBg.onclick = closeModal;
+
+  document.getElementById('productForm').onsubmit = function(e) {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(this).entries());
+    data.finalStock = parseInt(data.finalStock);
+    data.price = parseFloat(data.price);
+    if (!data.date || !data.licensePlate || !data.brand || !data.product) {
+      alert('Por favor, completa todos los campos requeridos.');
+      return;
+    }
+    if (editId) {
+      entries = entries.map(e => e.id === editId ? {...e, ...data, id: editId} : e);
+    } else {
+      const newId = entries.length ? Math.max(...entries.map(e => e.id)) + 1 : 1;
+      entries.push({...data, id: newId});
+    }
+    saveEntries(entries);
+    closeModal();
+    renderTable(document.getElementById('searchInput').value);
+  };
+
+  function handleDelete(id) {
+    if (confirm('¿Estás seguro de eliminar este producto?')) {
+      entries = entries.filter(e => e.id !== Number(id));
+      saveEntries(entries);
+      renderTable(document.getElementById('searchInput').value);
+    }
+  }
+
+  document.getElementById('searchInput').oninput = function() {
+    renderTable(this.value);
+  };
+
+  // ---- Modal Importar Excel ----
+  const importModal = document.getElementById('importModal');
+  const importModalBg = document.getElementById('importModalBg');
+  document.getElementById('importBtn').onclick = () => {
+    importModal.classList.remove('hidden');
+    importModalBg.classList.remove('hidden');
+  };
+  document.getElementById('importCloseBtn').onclick = closeImportModal;
+  importModalBg.onclick = closeImportModal;
+  function closeImportModal() {
+    importModal.classList.add('hidden');
+    importModalBg.classList.add('hidden');
+    document.getElementById('excelInput').value = '';
+  }
+
+  // ---- Lógica de importación de Excel ----
+  document.getElementById('excelInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      const data = new Uint8Array(ev.target.result);
+      const workbook = XLSX.read(data, {type: 'array'});
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const imported = XLSX.utils.sheet_to_json(sheet);
+      let newEntries = imported.map((row, idx) => {
+        return {
+          id: Date.now() + idx,
+          date: excelDateToString(row.date),
+          licensePlate: row.licensePlate || '',
+          brand: row.brand || '',
+          type: row.type || '',
+          product: row.product || '',
+          description: row.description || '',
+          observations: row.observations || '',
+          supplier: row.supplier || '',
+          finalStock: parseInt(row.finalStock) || 0,
+          price: parseFloat(row.price) || 0
+        };
+      });
+      entries = entries.concat(newEntries);
+      saveEntries(entries);
+      renderTable(document.getElementById('searchInput').value);
+      closeImportModal();
+      alert('Productos importados correctamente');
     };
-  </script>
+    reader.readAsArrayBuffer(file);
+  });
+
+  // ---- Botón borrar todo ----
+  document.getElementById('clearBtn').onclick = function() {
+    if (confirm('¿Estás seguro de que deseas borrar TODOS los productos?')) {
+      entries = [];
+      saveEntries(entries);
+      renderTable();
+    }
+  };
+
+  // --- Inicia tabla solo si está logueado ---
+  if (!document.getElementById("mainContent").classList.contains("hidden")) {
+    renderTable();
+  }
+</script>
 </body>
 </html>
