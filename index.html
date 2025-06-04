@@ -5,7 +5,6 @@
   <title>Base de Datos de Productos</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Librería SheetJS para leer archivos Excel -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -20,6 +19,9 @@
         </button>
         <button id="addBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors duration-200">
           Nuevo Producto
+        </button>
+        <button id="clearBtn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md transition-colors duration-200">
+          Borrar todo
         </button>
       </div>
     </div>
@@ -37,11 +39,11 @@
             <tr>
               <th class="px-2 py-2 text-xs text-left text-gray-500">FECHA</th>
               <th class="px-2 py-2 text-xs text-left text-gray-500">PLACA</th>
-              <th class="px-2 py-2 text-xs text-left text-gray-500">MARCA/ANAQUEL</th>
+              <th class="px-2 py-2 text-xs text-left text-gray-500">MARCA-ANAQUEL</th>
               <th class="px-2 py-2 text-xs text-left text-gray-500">TIPO</th>
               <th class="px-2 py-2 text-xs text-left text-gray-500">PRODUCTO</th>
               <th class="px-2 py-2 text-xs text-left text-gray-500">DESCRIPCIÓN</th>
-              <th class="px-2 py-2 text-xs text-left text-gray-500">OBSERVACIONES</th>
+              <th class="px-2 py-2 text-xs text-left text-gray-500">OBERVACIONES</th>
               <th class="px-2 py-2 text-xs text-left text-gray-500">PROVEEDOR</th>
               <th class="px-2 py-2 text-xs text-left text-gray-500">STOCK FINAL</th>
               <th class="px-2 py-2 text-xs text-left text-gray-500">PRECIO</th>
@@ -73,7 +75,7 @@
           </div>
         </div>
         <div>
-          <label class="text-sm font-medium">Marca/Anaquel</label>
+          <label class="text-sm font-medium">Marca-Anaquel</label>
           <input type="text" name="brand" required class="w-full border px-2 py-1 rounded" />
         </div>
         <div>
@@ -89,7 +91,7 @@
           <textarea name="description" rows="2" class="w-full border px-2 py-1 rounded"></textarea>
         </div>
         <div>
-          <label class="text-sm font-medium">Observaciones</label>
+          <label class="text-sm font-medium">Obervaciones</label>
           <textarea name="observations" rows="2" class="w-full border px-2 py-1 rounded"></textarea>
         </div>
         <div>
@@ -129,24 +131,9 @@
     </div>
   </div>
 
-  <!-- Script principal -->
   <script>
     // ---- Datos iniciales y LocalStorage ----
-    const initialEntries = [
-      {
-        id: 1,
-        date: '2023-09-01',
-        licensePlate: 'ABC123',
-        brand: 'Coca-Cola',
-        type: 'Bebida',
-        product: 'Coca-Cola 2L',
-        description: 'Refresco de cola',
-        observations: 'En buen estado',
-        supplier: 'Distribuidora ABC',
-        finalStock: 50,
-        price: 2.99,
-      }
-    ];
+    const initialEntries = [];
     function loadEntries() {
       const data = localStorage.getItem('databaseEntries');
       return data ? JSON.parse(data) : initialEntries;
@@ -293,10 +280,9 @@
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
         const imported = XLSX.utils.sheet_to_json(sheet);
-        // Validar y limpiar los datos
         let newEntries = imported.map((row, idx) => {
           return {
-            id: Date.now() + idx, // ID único
+            id: Date.now() + idx,
             date: row.date || '',
             licensePlate: row.licensePlate || '',
             brand: row.brand || '',
@@ -309,7 +295,6 @@
             price: parseFloat(row.price) || 0
           };
         });
-        // Agrega los productos importados
         entries = entries.concat(newEntries);
         saveEntries(entries);
         renderTable(document.getElementById('searchInput').value);
@@ -318,6 +303,15 @@
       };
       reader.readAsArrayBuffer(file);
     });
+
+    // ---- Botón borrar todo ----
+    document.getElementById('clearBtn').onclick = function() {
+      if (confirm('¿Estás seguro de que deseas borrar TODOS los productos?')) {
+        entries = [];
+        saveEntries(entries);
+        renderTable();
+      }
+    };
   </script>
 </body>
 </html>
