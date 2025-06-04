@@ -4,8 +4,9 @@
   <meta charset="UTF-8">
   <title>Base de Datos de Productos</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- Estilos modernos con Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Librería SheetJS para leer archivos Excel -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body class="bg-gray-100 min-h-screen">
 
@@ -14,6 +15,9 @@
     <div class="max-w-5xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center">
       <h1 class="text-2xl font-bold text-gray-900 mb-3 sm:mb-0">Base de Datos de Productos</h1>
       <div class="flex space-x-2">
+        <button id="importBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md transition-colors duration-200">
+          Importar Excel
+        </button>
         <button id="addBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors duration-200">
           Nuevo Producto
         </button>
@@ -52,7 +56,7 @@
     </div>
   </main>
 
-  <!-- Modal -->
+  <!-- Modal agregar/editar producto -->
   <div id="modalBg" class="fixed inset-0 bg-black bg-opacity-30 z-40 hidden"></div>
   <div id="modal" class="fixed inset-0 flex items-center justify-center z-50 hidden">
     <div class="bg-white rounded-lg p-6 w-full max-w-lg shadow-lg">
@@ -110,9 +114,24 @@
     </div>
   </div>
 
+  <!-- Modal importar Excel -->
+  <div id="importModalBg" class="fixed inset-0 bg-black bg-opacity-30 z-40 hidden"></div>
+  <div id="importModal" class="fixed inset-0 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg p-6 w-full max-w-md shadow-lg">
+      <h2 class="text-xl font-semibold mb-4">Importar productos desde Excel</h2>
+      <input type="file" id="excelInput" accept=".xlsx, .xls" class="mb-4"/>
+      <p class="text-gray-600 text-sm mb-3">Debe tener las columnas:<br>
+        <code class="bg-gray-100 p-1">date, licensePlate, brand, type, product, description, observations, supplier, finalStock, price</code>
+      </p>
+      <div class="flex justify-end space-x-2">
+        <button id="importCloseBtn" class="bg-gray-300 text-gray-800 px-4 py-2 rounded">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Script principal -->
   <script>
-    // Datos iniciales
+    // ---- Datos iniciales y LocalStorage ----
     const initialEntries = [
       {
         id: 1,
@@ -126,36 +145,8 @@
         supplier: 'Distribuidora ABC',
         finalStock: 50,
         price: 2.99,
-      },
-      {
-        id: 2,
-        date: '2023-09-02',
-        licensePlate: 'XYZ789',
-        brand: 'Pepsi',
-        type: 'Bebida',
-        product: 'Pepsi 2L',
-        description: 'Refresco de cola',
-        observations: 'En buen estado',
-        supplier: 'Distribuidora XYZ',
-        finalStock: 40,
-        price: 2.79,
-      },
-      {
-        id: 3,
-        date: '2023-09-03',
-        licensePlate: 'DEF456',
-        brand: 'Detergente',
-        type: 'Limpieza',
-        product: 'Detergente Líquido',
-        description: 'Para ropa',
-        observations: 'Promoción por tiempo limitado',
-        supplier: 'Suministros S.A.',
-        finalStock: 25,
-        price: 5.49,
-      },
+      }
     ];
-
-    // Manejo de LocalStorage
     function loadEntries() {
       const data = localStorage.getItem('databaseEntries');
       return data ? JSON.parse(data) : initialEntries;
@@ -163,11 +154,10 @@
     function saveEntries(entries) {
       localStorage.setItem('databaseEntries', JSON.stringify(entries));
     }
-
     let entries = loadEntries();
     let editId = null;
 
-    // Renderiza la tabla de productos
+    // ---- Render Tabla ----
     function renderTable(filter = '') {
       const tbody = document.getElementById('tableBody');
       tbody.innerHTML = '';
@@ -209,7 +199,6 @@
         `;
         tbody.appendChild(row);
       });
-      // Asignar eventos a botones
       document.querySelectorAll('.editBtn').forEach(btn => {
         btn.onclick = () => openModal('edit', btn.dataset.id);
       });
@@ -218,7 +207,7 @@
       });
     }
 
-    // Modal
+    // ---- Modal agregar/editar ----
     const modal = document.getElementById('modal');
     const modalBg = document.getElementById('modalBg');
     function openModal(type, id = null) {
@@ -226,7 +215,6 @@
       modalBg.classList.remove('hidden');
       document.getElementById('modalTitle').textContent = type === 'add' ? 'Agregar Nuevo Producto' : 'Editar Producto';
       editId = id ? Number(id) : null;
-      // Rellenar formulario
       const form = document.getElementById('productForm');
       if (type === 'edit' && id) {
         const entry = entries.find(e => e.id === Number(id));
@@ -242,12 +230,10 @@
       modalBg.classList.add('hidden');
       editId = null;
     }
-
     document.getElementById('addBtn').onclick = () => openModal('add');
     document.getElementById('cancelBtn').onclick = closeModal;
     modalBg.onclick = closeModal;
 
-    // Guardar producto
     document.getElementById('productForm').onsubmit = function(e) {
       e.preventDefault();
       const data = Object.fromEntries(new FormData(this).entries());
@@ -258,10 +244,8 @@
         return;
       }
       if (editId) {
-        // Editar
         entries = entries.map(e => e.id === editId ? {...e, ...data, id: editId} : e);
       } else {
-        // Nuevo
         const newId = entries.length ? Math.max(...entries.map(e => e.id)) + 1 : 1;
         entries.push({...data, id: newId});
       }
@@ -270,7 +254,6 @@
       renderTable(document.getElementById('searchInput').value);
     };
 
-    // Eliminar producto
     function handleDelete(id) {
       if (confirm('¿Estás seguro de eliminar este producto?')) {
         entries = entries.filter(e => e.id !== Number(id));
@@ -279,13 +262,62 @@
       }
     }
 
-    // Buscar
     document.getElementById('searchInput').oninput = function() {
       renderTable(this.value);
     };
-
-    // Inicializa tabla
     renderTable();
+
+    // ---- Modal Importar Excel ----
+    const importModal = document.getElementById('importModal');
+    const importModalBg = document.getElementById('importModalBg');
+    document.getElementById('importBtn').onclick = () => {
+      importModal.classList.remove('hidden');
+      importModalBg.classList.remove('hidden');
+    };
+    document.getElementById('importCloseBtn').onclick = closeImportModal;
+    importModalBg.onclick = closeImportModal;
+    function closeImportModal() {
+      importModal.classList.add('hidden');
+      importModalBg.classList.add('hidden');
+      document.getElementById('excelInput').value = '';
+    }
+
+    // ---- Lógica de importación de Excel ----
+    document.getElementById('excelInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        const data = new Uint8Array(ev.target.result);
+        const workbook = XLSX.read(data, {type: 'array'});
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const imported = XLSX.utils.sheet_to_json(sheet);
+        // Validar y limpiar los datos
+        let newEntries = imported.map((row, idx) => {
+          return {
+            id: Date.now() + idx, // ID único
+            date: row.date || '',
+            licensePlate: row.licensePlate || '',
+            brand: row.brand || '',
+            type: row.type || '',
+            product: row.product || '',
+            description: row.description || '',
+            observations: row.observations || '',
+            supplier: row.supplier || '',
+            finalStock: parseInt(row.finalStock) || 0,
+            price: parseFloat(row.price) || 0
+          };
+        });
+        // Agrega los productos importados
+        entries = entries.concat(newEntries);
+        saveEntries(entries);
+        renderTable(document.getElementById('searchInput').value);
+        closeImportModal();
+        alert('Productos importados correctamente');
+      };
+      reader.readAsArrayBuffer(file);
+    });
   </script>
 </body>
 </html>
