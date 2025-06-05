@@ -63,8 +63,8 @@
     <!-- TRES BARRAS DE BUSQUEDA -->
     <div class="w-full max-w-full px-4 pb-2 grid grid-cols-1 sm:grid-cols-3 gap-2">
       <input id="searchInput" type="text" placeholder="Buscar en toda la base de datos..." class="w-full pl-3 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
-      <input id="searchCodigo" type="text" placeholder="Buscar por CODIGO, PRODUCTO, MARCA, DESCRIPCIÓN, TIPO..." class="w-full pl-3 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" />
-      <input id="searchExtra" type="text" placeholder="Buscar también por CODIGO, PRODUCTO, MARCA, DESCRIPCIÓN, TIPO..." class="w-full pl-3 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500" />
+      <input id="searchCodigo" type="text" placeholder="Buscar por CODIGO, PRODUCTO, MARCA, DESCRIPCIÓN..." class="w-full pl-3 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" />
+      <input id="searchCodigo2" type="text" placeholder="Buscar por CODIGO, PRODUCTO, MARCA, DESCRIPCIÓN..." class="w-full pl-3 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500" />
     </div>
   </header>
 
@@ -168,18 +168,6 @@
   let search2 = "";
   let search3 = "";
 
-  function buscarCamposEspeciales(entry, texto) {
-    const t = texto.toLowerCase();
-    return (
-      (entry.codigo && entry.codigo.toLowerCase().includes(t)) ||
-      (entry.codigoproducto && entry.codigoproducto.toLowerCase().includes(t)) ||
-      (entry.marcaanaquel && entry.marcaanaquel.toLowerCase().includes(t)) ||
-      (entry.product && entry.product.toLowerCase().includes(t)) ||
-      (entry.description && entry.description.toLowerCase().includes(t)) ||
-      (entry.type && entry.type.toLowerCase().includes(t))
-    );
-  }
-
   function applyFilters() {
     filtered = entries;
     // Primer filtro: búsqueda general (toda la base)
@@ -191,13 +179,27 @@
         )
       );
     }
-    // Segundo filtro: búsqueda especial
+    // Segundo filtro: búsqueda por codigo, codigoproducto, marcaanaquel, product, description
     if(search2.trim()) {
-      filtered = filtered.filter(e => buscarCamposEspeciales(e, search2.trim()));
+      const t2 = search2.trim().toLowerCase();
+      filtered = filtered.filter(e =>
+        (e.codigo && e.codigo.toLowerCase().includes(t2)) ||
+        (e.codigoproducto && e.codigoproducto.toLowerCase().includes(t2)) ||
+        (e.marcaanaquel && e.marcaanaquel.toLowerCase().includes(t2)) ||
+        (e.product && e.product.toLowerCase().includes(t2)) ||
+        (e.description && e.description.toLowerCase().includes(t2))
+      );
     }
-    // Tercer filtro: igual que segundo filtro
+    // Tercer filtro: igual al segundo (AND combinable)
     if(search3.trim()) {
-      filtered = filtered.filter(e => buscarCamposEspeciales(e, search3.trim()));
+      const t3 = search3.trim().toLowerCase();
+      filtered = filtered.filter(e =>
+        (e.codigo && e.codigo.toLowerCase().includes(t3)) ||
+        (e.codigoproducto && e.codigoproducto.toLowerCase().includes(t3)) ||
+        (e.marcaanaquel && e.marcaanaquel.toLowerCase().includes(t3)) ||
+        (e.product && e.product.toLowerCase().includes(t3)) ||
+        (e.description && e.description.toLowerCase().includes(t3))
+      );
     }
 
     currentPage = 1;
@@ -263,9 +265,48 @@
     let endPage = Math.min(totalPages, currentPage + maxShow);
 
     if (startPage > 1) {
-      pag.push(`<button class="px-2 py-1 border rounded text-blue-600 hover:bg-blue-50 mr-1" onclick="goToPageJs(1)">1</
+      pag.push(`<button class="px-2 py-1 border rounded text-blue-600 hover:bg-blue-50 mr-1" onclick="goToPageJs(1)">1</button>`);
+      if (startPage > 2) pag.push(`<span class="px-2">...</span>`);
+    }
 
+    for (let i = startPage; i <= endPage; i++) {
+      pag.push(
+        i === currentPage
+        ? `<span class="px-2 py-1 border rounded bg-blue-600 text-white mr-1">${i}</span>`
+        : `<button class="px-2 py-1 border rounded text-blue-600 hover:bg-blue-50 mr-1" onclick="goToPageJs(${i})">${i}</button>`
+      );
+    }
 
+    if (endPage < totalPages) {
+      if (endPage < totalPages-1) pag.push(`<span class="px-2">...</span>`);
+      pag.push(`<button class="px-2 py-1 border rounded text-blue-600 hover:bg-blue-50 mr-1" onclick="goToPageJs(${totalPages})">${totalPages}</button>`);
+    }
+    pag.push(`<button class="px-2 py-1 border rounded ${currentPage===totalPages?"text-gray-400":"text-gray-700 hover:bg-gray-100"} ml-1" ${currentPage===totalPages?"disabled":""} onclick="goToPageJs(${currentPage+1})">Siguiente</button>`);
+    pagDiv.innerHTML = pag.join('');
+  }
+
+  window.goToPageJs = function(n) {
+    currentPage = n;
+    renderTable();
+    renderPagination();
+    document.getElementById('productsTable').scrollIntoView({behavior:'smooth'});
+  }
+
+  document.getElementById('searchInput').oninput = function() {
+    search1 = this.value;
+    applyFilters();
+  };
+  document.getElementById('searchCodigo').oninput = function() {
+    search2 = this.value;
+    applyFilters();
+  };
+  document.getElementById('searchCodigo2').oninput = function() {
+    search3 = this.value;
+    applyFilters();
+  };
+</script>
+</body>
+</html>
 
 
 
