@@ -15,27 +15,36 @@
       height: 10px;
     }
     .fijo {
-      min-width: 1100px !important;
-      /* Puedes bajar a 1000px si tu pantalla es más pequeña */
+      min-width: 1040px !important; /* Ajustado justo al total de columnas */
+      max-width: 1040px !important;
+      table-layout: fixed;
     }
     @media (min-width: 1800px) {
       .fijo {
-        min-width: 1300px !important;
+        min-width: 1200px !important;
+        max-width: 1200px !important;
       }
     }
-    /* Reduce el ancho de columnas */
-    .col-codigo, .col-anaquel, .col-codigoproducto, .col-marcaanaquel, .col-tipo, .col-producto, .col-stock, .col-precio, .col-cantidad, .col-total, .col-observaciones {
+    .col-codigo, .col-anaquel, .col-codigoproducto, .col-marcaanaquel, .col-tipo, .col-stock, .col-precio, .col-cantidad, .col-total, .col-observaciones {
       max-width: 70px;
       min-width: 60px;
+      width: 70px;
       white-space: nowrap !important;
       overflow: hidden;
       text-overflow: ellipsis;
       padding-left: 2px;
       padding-right: 2px;
     }
+    .col-producto {
+      min-width: 110px;
+      max-width: 150px;
+      width: 140px;
+      white-space: normal !important;
+    }
     .descripcion-col {
-      max-width: 100px;
-      min-width: 70px;
+      min-width: 160px;
+      max-width: 200px;
+      width: 180px;
       white-space: normal !important;
       word-break: break-word;
       font-size: 11px;
@@ -129,7 +138,6 @@
   // SheetDB API
   const SHEETDB_API = "https://sheetdb.io/api/v1/yt1a1pctg3qca";
 
-  // ---- Sesión sólo mientras la pestaña/navegador está abierto ----
   function isLoggedIn() {
     return sessionStorage.getItem("sessionActiva") === "SI";
   }
@@ -138,7 +146,6 @@
     else sessionStorage.removeItem("sessionActiva");
   }
 
-  // Mantiene sesión solo mientras la pestaña/navegador está abierto
   if(isLoggedIn()) {
     document.getElementById("loginModal").classList.add("hidden");
     document.getElementById("mainContent").classList.remove("hidden");
@@ -168,12 +175,10 @@
     window.location.reload();
   };
 
-  // Leer datos de SheetDB
   let entries = [];
   let filtered = [];
   let currentPage = 1;
   const perPage = 25;
-  // Para almacenar cantidades por producto en memoria (no se guarda en base de datos)
   let cantidades = {};
 
   function fetchAndRender() {
@@ -190,14 +195,12 @@
       });
   }
 
-  // Buscadores
   let search1 = "";
   let search2 = "";
   let search3 = "";
 
   function applyFilters() {
     filtered = entries;
-    // Primer filtro: búsqueda general (toda la base)
     if(search1.trim()) {
       const t1 = search1.trim().toLowerCase();
       filtered = filtered.filter(e =>
@@ -206,7 +209,6 @@
         )
       );
     }
-    // Segundo filtro: búsqueda por codigo, codigoproducto, marcaanaquel, product, description
     if(search2.trim()) {
       const t2 = search2.trim().toLowerCase();
       filtered = filtered.filter(e =>
@@ -217,7 +219,6 @@
         (e.description && e.description.toLowerCase().includes(t2))
       );
     }
-    // Tercer filtro: igual al segundo (AND combinable)
     if(search3.trim()) {
       const t3 = search3.trim().toLowerCase();
       filtered = filtered.filter(e =>
@@ -234,7 +235,6 @@
     renderPagination();
   }
 
-  // Render tabla con paginación
   function renderTable() {
     const tbody = document.getElementById('tableBody');
     tbody.innerHTML = '';
@@ -275,27 +275,24 @@
       tbody.appendChild(row);
     });
 
-    // Escuchar cambios en inputs de cantidad
     document.querySelectorAll('.cantidad-input').forEach(input => {
       input.oninput = function() {
         const k = this.dataset.key;
-        let val = this.value.replace(/^0+/, ''); // sin ceros a la izquierda
+        let val = this.value.replace(/^0+/, '');
         if (val === "") val = "";
-        if (!/^\d*$/.test(val)) return; // solo números
+        if (!/^\d*$/.test(val)) return;
         cantidades[k] = val === "" ? "" : parseInt(val);
         renderTable();
       };
     });
   }
 
-  // Render paginación
   function renderPagination() {
     const pagDiv = document.getElementById('pagination');
     pagDiv.innerHTML = '';
     const total = filtered.length;
     const totalPages = Math.ceil(total / perPage);
     if(totalPages <= 1) return;
-
     function goToPage(p) {
       if(p < 1 || p > totalPages) return;
       currentPage = p;
@@ -303,19 +300,15 @@
       renderPagination();
       document.getElementById('productsTable').scrollIntoView({behavior:'smooth'});
     }
-
-    // Elementos de paginación
     const pag = [];
     pag.push(`<button class="px-2 py-1 border rounded ${currentPage===1?"text-gray-400":"text-gray-700 hover:bg-gray-100"} mr-1" ${currentPage===1?"disabled":""} onclick="goToPageJs(${currentPage-1})">Anterior</button>`);
     let maxShow = 3;
     let startPage = Math.max(1, currentPage - maxShow);
     let endPage = Math.min(totalPages, currentPage + maxShow);
-
     if (startPage > 1) {
       pag.push(`<button class="px-2 py-1 border rounded text-blue-600 hover:bg-blue-50 mr-1" onclick="goToPageJs(1)">1</button>`);
       if (startPage > 2) pag.push(`<span class="px-2">...</span>`);
     }
-
     for (let i = startPage; i <= endPage; i++) {
       pag.push(
         i === currentPage
@@ -323,7 +316,6 @@
         : `<button class="px-2 py-1 border rounded text-blue-600 hover:bg-blue-50 mr-1" onclick="goToPageJs(${i})">${i}</button>`
       );
     }
-
     if (endPage < totalPages) {
       if (endPage < totalPages-1) pag.push(`<span class="px-2">...</span>`);
       pag.push(`<button class="px-2 py-1 border rounded text-blue-600 hover:bg-blue-50 mr-1" onclick="goToPageJs(${totalPages})">${totalPages}</button>`);
