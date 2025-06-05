@@ -15,11 +15,11 @@
       height: 10px;
     }
     .fijo {
-      min-width: 1200px !important;
+      min-width: 1400px !important;
     }
     @media (min-width: 1800px) {
       .fijo {
-        min-width: 1600px !important;
+        min-width: 1700px !important;
       }
     }
     .descripcion-col {
@@ -27,6 +27,16 @@
       min-width: 100px;
       white-space: normal !important;
       word-break: break-word;
+    }
+    input[type='number']::-webkit-inner-spin-button,
+    input[type='number']::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type='number'] {
+      -moz-appearance: textfield;
+      appearance: textfield;
+      text-align: right;
     }
   </style>
 </head>
@@ -84,6 +94,8 @@
               <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">OBERVACIONES</th>
               <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">STOCK FINAL</th>
               <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">PRECIO</th>
+              <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">CANTIDAD</th>
+              <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">TOTAL</th>
             </tr>
           </thead>
           <tbody id="tableBody" class="bg-white divide-y divide-gray-200">
@@ -148,6 +160,8 @@
   let filtered = [];
   let currentPage = 1;
   const perPage = 25;
+  // Para almacenar cantidades por producto en memoria (no se guarda en base de datos)
+  let cantidades = {};
 
   function fetchAndRender() {
     fetch(SHEETDB_API)
@@ -214,7 +228,7 @@
     if (filtered.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="10" class="px-6 py-4 text-center text-gray-500">
+          <td colspan="12" class="px-6 py-4 text-center text-gray-500">
             No se encontraron resultados
           </td>
         </tr>
@@ -224,6 +238,11 @@
     const start = (currentPage - 1) * perPage;
     const end = start + perPage;
     filtered.slice(start, end).forEach(entry => {
+      // identificador único por fila (id o codigo+producto)
+      const key = entry.id || (entry.codigo || '') + '-' + (entry.product || '');
+      const cantidad = cantidades[key] !== undefined ? cantidades[key] : '';
+      const precio = entry.price !== "" ? Number(entry.price) : 0;
+      const total = (cantidad && !isNaN(cantidad) && precio) ? (Number(cantidad) * precio) : 0;
       const row = document.createElement('tr');
       row.innerHTML = `
         <td class="px-1 py-1 text-[11px] whitespace-nowrap">${entry.codigo || ""}</td>
@@ -236,8 +255,24 @@
         <td class="px-1 py-1 text-[11px] whitespace-nowrap">${entry.observations || ""}</td>
         <td class="px-1 py-1 text-[11px] whitespace-nowrap">${entry.finalStock !== undefined && entry.finalStock !== null && entry.finalStock !== "" ? entry.finalStock : ""}</td>
         <td class="px-1 py-1 text-[11px] whitespace-nowrap">${entry.price !== "" ? "S/" + Number(entry.price).toFixed(2) : ""}</td>
+        <td class="px-1 py-1 text-[11px] whitespace-nowrap">
+          <input type="number" min="0" value="${cantidad}" data-key="${key}" class="cantidad-input border w-14 rounded px-1 py-0.5 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+        </td>
+        <td class="px-1 py-1 text-[11px] whitespace-nowrap total-celda">${total > 0 ? "S/" + total.toFixed(2) : ""}</td>
       `;
       tbody.appendChild(row);
+    });
+
+    // Escuchar cambios en inputs de cantidad
+    document.querySelectorAll('.cantidad-input').forEach(input => {
+      input.oninput = function() {
+        const k = this.dataset.key;
+        let val = this.value.replace(/^0+/, ''); // sin ceros a la izquierda
+        if (val === "") val = "";
+        if (!/^\d*$/.test(val)) return; // solo números
+        cantidades[k] = val === "" ? "" : parseInt(val);
+        renderTable();
+      };
     });
   }
 
@@ -307,6 +342,7 @@
 </script>
 </body>
 </html>
+
 
 
 
