@@ -15,7 +15,12 @@
       height: 10px;
     }
     .fijo {
-      min-width: 2200px !important;
+      min-width: 1300px !important;
+    }
+    @media (min-width: 1800px) {
+      .fijo {
+        min-width: 1700px !important;
+      }
     }
   </style>
 </head>
@@ -43,36 +48,36 @@
 <!-- Main Content -->
 <div id="mainContent" class="hidden">
   <header class="bg-white shadow-sm">
-    <div class="max-w-5xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center">
+    <div class="w-full max-w-full px-4 py-4 flex flex-col sm:flex-row justify-between items-center">
       <h1 class="text-2xl font-bold text-gray-900 mb-3 sm:mb-0">Base de Datos de Productos</h1>
       <button id="logoutBtn" class="bg-gray-400 hover:bg-gray-600 text-white px-4 py-2 rounded-md transition-colors duration-200">
         Cerrar sesión
       </button>
     </div>
     <!-- DOS BARRAS DE BUSQUEDA -->
-    <div class="max-w-5xl mx-auto px-4 pb-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+    <div class="w-full max-w-full px-4 pb-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
       <input id="searchInput" type="text" placeholder="Buscar en toda la base de datos..." class="w-full pl-3 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
       <input id="searchCodigo" type="text" placeholder="Buscar solo por CODIGO, PRODUCTO, MARCA, DESCRIPCIÓN..." class="w-full pl-3 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" />
     </div>
   </header>
 
-  <main class="max-w-5xl mx-auto px-4 py-6">
-    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+  <main class="w-full max-w-full px-1 py-3">
+    <div class="w-full bg-white shadow overflow-hidden sm:rounded-lg">
       <div class="scroll-table-x" id="scrollBottom">
         <table class="min-w-full divide-y divide-gray-200 fijo" id="productsTable">
           <thead class="bg-gray-50">
             <tr>
-              <th class="px-2 py-2 text-xs text-left text-gray-500">CODIGO</th>
-              <th class="px-2 py-2 text-xs text-left text-gray-500">ANAQUEL</th>
-              <th class="px-2 py-2 text-xs text-left text-gray-500">CODIGO PRODUCTO</th>
-              <th class="px-2 py-2 text-xs text-left text-gray-500">MARCA-ANAQUEL</th>
-              <th class="px-2 py-2 text-xs text-left text-gray-500">TIPO</th>
-              <th class="px-2 py-2 text-xs text-left text-gray-500">PRODUCTO</th>
-              <th class="px-2 py-2 text-xs text-left text-gray-500">DESCRIPCIÓN</th>
-              <th class="px-2 py-2 text-xs text-left text-gray-500">OBERVACIONES</th>
-              <th class="px-2 py-2 text-xs text-left text-gray-500">PROVEEDOR</th>
-              <th class="px-2 py-2 text-xs text-left text-gray-500">STOCK FINAL</th>
-              <th class="px-2 py-2 text-xs text-left text-gray-500">PRECIO</th>
+              <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">CODIGO</th>
+              <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">ANAQUEL</th>
+              <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">CODIGO PRODUCTO</th>
+              <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">MARCA-ANAQUEL</th>
+              <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">TIPO</th>
+              <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">PRODUCTO</th>
+              <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">DESCRIPCIÓN</th>
+              <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">OBERVACIONES</th>
+              <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">PROVEEDOR</th>
+              <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">STOCK FINAL</th>
+              <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">PRECIO</th>
             </tr>
           </thead>
           <tbody id="tableBody" class="bg-white divide-y divide-gray-200">
@@ -202,17 +207,17 @@
     filtered.slice(start, end).forEach(entry => {
       const row = document.createElement('tr');
       row.innerHTML = `
-        <td class="px-2 py-2">${entry.codigo || ""}</td>
-        <td class="px-2 py-2">${entry.anaquel || ""}</td>
-        <td class="px-2 py-2">${entry.codigoproducto || ""}</td>
-        <td class="px-2 py-2">${entry.marcaanaquel || ""}</td>
-        <td class="px-2 py-2">${entry.type || ""}</td>
-        <td class="px-2 py-2">${entry.product || ""}</td>
-        <td class="px-2 py-2">${entry.description || ""}</td>
-        <td class="px-2 py-2">${entry.observations || ""}</td>
-        <td class="px-2 py-2">${entry.supplier || ""}</td>
-        <td class="px-2 py-2">${entry.finalStock !== undefined && entry.finalStock !== null && entry.finalStock !== "" ? entry.finalStock : ""}</td>
-        <td class="px-2 py-2">${entry.price !== "" ? "S/" + Number(entry.price).toFixed(2) : ""}</td>
+        <td class="px-1 py-1 text-[11px] whitespace-nowrap">${entry.codigo || ""}</td>
+        <td class="px-1 py-1 text-[11px] whitespace-nowrap">${entry.anaquel || ""}</td>
+        <td class="px-1 py-1 text-[11px] whitespace-nowrap">${entry.codigoproducto || ""}</td>
+        <td class="px-1 py-1 text-[11px] whitespace-nowrap">${entry.marcaanaquel || ""}</td>
+        <td class="px-1 py-1 text-[11px] whitespace-nowrap">${entry.type || ""}</td>
+        <td class="px-1 py-1 text-[11px] whitespace-nowrap">${entry.product || ""}</td>
+        <td class="px-1 py-1 text-[11px] whitespace-nowrap">${entry.description || ""}</td>
+        <td class="px-1 py-1 text-[11px] whitespace-nowrap">${entry.observations || ""}</td>
+        <td class="px-1 py-1 text-[11px] whitespace-nowrap">${entry.supplier || ""}</td>
+        <td class="px-1 py-1 text-[11px] whitespace-nowrap">${entry.finalStock !== undefined && entry.finalStock !== null && entry.finalStock !== "" ? entry.finalStock : ""}</td>
+        <td class="px-1 py-1 text-[11px] whitespace-nowrap">${entry.price !== "" ? "S/" + Number(entry.price).toFixed(2) : ""}</td>
       `;
       tbody.appendChild(row);
     });
@@ -231,16 +236,13 @@
       currentPage = p;
       renderTable();
       renderPagination();
-      // scroll hasta la tabla al cambiar página (opcional)
       document.getElementById('productsTable').scrollIntoView({behavior:'smooth'});
     }
 
     // Elementos de paginación
     const pag = [];
-    // Botón anterior
     pag.push(`<button class="px-2 py-1 border rounded ${currentPage===1?"text-gray-400":"text-gray-700 hover:bg-gray-100"} mr-1" ${currentPage===1?"disabled":""} onclick="goToPageJs(${currentPage-1})">Anterior</button>`);
-    // Números de página
-    let maxShow = 3; // Número de páginas antes y después de la actual que se mostrarán
+    let maxShow = 3;
     let startPage = Math.max(1, currentPage - maxShow);
     let endPage = Math.min(totalPages, currentPage + maxShow);
 
@@ -261,12 +263,10 @@
       if (endPage < totalPages-1) pag.push(`<span class="px-2">...</span>`);
       pag.push(`<button class="px-2 py-1 border rounded text-blue-600 hover:bg-blue-50 mr-1" onclick="goToPageJs(${totalPages})">${totalPages}</button>`);
     }
-    // Botón siguiente
     pag.push(`<button class="px-2 py-1 border rounded ${currentPage===totalPages?"text-gray-400":"text-gray-700 hover:bg-gray-100"} ml-1" ${currentPage===totalPages?"disabled":""} onclick="goToPageJs(${currentPage+1})">Siguiente</button>`);
     pagDiv.innerHTML = pag.join('');
   }
 
-  // Hack para usar goToPage desde el HTML dinámico
   window.goToPageJs = function(n) {
     currentPage = n;
     renderTable();
@@ -274,7 +274,6 @@
     document.getElementById('productsTable').scrollIntoView({behavior:'smooth'});
   }
 
-  // Buscadores independientes
   document.getElementById('searchInput').oninput = function() {
     search1 = this.value;
     applyFilters();
@@ -286,6 +285,7 @@
 </script>
 </body>
 </html>
+
 
 
 
