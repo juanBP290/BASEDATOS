@@ -80,6 +80,8 @@
           </tbody>
         </table>
       </div>
+      <!-- Paginación -->
+      <div id="pagination" class="flex justify-center items-center my-4"></div>
     </div>
   </main>
 </div>
@@ -91,7 +93,7 @@
   // SheetDB API
   const SHEETDB_API = "https://sheetdb.io/api/v1/yt1a1pctg3qca";
 
-  // ---- Cambia aquí de localStorage a sessionStorage ----
+  // ---- Sesión sólo mientras la pestaña/navegador está abierto ----
   function isLoggedIn() {
     return sessionStorage.getItem("sessionActiva") === "SI";
   }
@@ -132,6 +134,10 @@
 
   // Leer datos de SheetDB
   let entries = [];
+  let filtered = [];
+  let currentPage = 1;
+  const perPage = 25;
+
   function fetchAndRender() {
     fetch(SHEETDB_API)
       .then(res => res.json())
@@ -142,7 +148,7 @@
           finalStock: e.finalStock ? parseInt(e.finalStock) : "",
           price: e.price && !isNaN(parseFloat(e.price)) ? parseFloat(e.price) : ""
         }));
-        renderTable();
+        applyFilters();
       });
   }
 
@@ -150,12 +156,8 @@
   let search1 = "";
   let search2 = "";
 
-  // Render tabla con dos filtros
-  function renderTable() {
-    const tbody = document.getElementById('tableBody');
-    tbody.innerHTML = '';
-    let filtered = entries;
-
+  function applyFilters() {
+    filtered = entries;
     // Primer filtro: búsqueda general (toda la base)
     if(search1.trim()) {
       const t1 = search1.trim().toLowerCase();
@@ -165,7 +167,6 @@
         )
       );
     }
-
     // Segundo filtro: búsqueda por codigo, codigoproducto, marcaanaquel, product, description
     if(search2.trim()) {
       const t2 = search2.trim().toLowerCase();
@@ -177,7 +178,15 @@
         (e.description && e.description.toLowerCase().includes(t2))
       );
     }
+    currentPage = 1;
+    renderTable();
+    renderPagination();
+  }
 
+  // Render tabla con paginación
+  function renderTable() {
+    const tbody = document.getElementById('tableBody');
+    tbody.innerHTML = '';
     if (filtered.length === 0) {
       tbody.innerHTML = `
         <tr>
@@ -188,8 +197,9 @@
       `;
       return;
     }
-
-    filtered.forEach(entry => {
+    const start = (currentPage - 1) * perPage;
+    const end = start + perPage;
+    filtered.slice(start, end).forEach(entry => {
       const row = document.createElement('tr');
       row.innerHTML = `
         <td class="px-2 py-2">${entry.codigo || ""}</td>
@@ -208,14 +218,70 @@
     });
   }
 
-  // Dos buscadores independientes
+  // Render paginación
+  function renderPagination() {
+    const pagDiv = document.getElementById('pagination');
+    pagDiv.innerHTML = '';
+    const total = filtered.length;
+    const totalPages = Math.ceil(total / perPage);
+    if(totalPages <= 1) return;
+
+    function goToPage(p) {
+      if(p < 1 || p > totalPages) return;
+      currentPage = p;
+      renderTable();
+      renderPagination();
+      // scroll hasta la tabla al cambiar página (opcional)
+      document.getElementById('productsTable').scrollIntoView({behavior:'smooth'});
+    }
+
+    // Elementos de paginación
+    const pag = [];
+    // Botón anterior
+    pag.push(`<button class="px-2 py-1 border rounded ${currentPage===1?"text-gray-400":"text-gray-700 hover:bg-gray-100"} mr-1" ${currentPage===1?"disabled":""} onclick="goToPageJs(${currentPage-1})">Anterior</button>`);
+    // Números de página
+    let maxShow = 3; // Número de páginas antes y después de la actual que se mostrarán
+    let startPage = Math.max(1, currentPage - maxShow);
+    let endPage = Math.min(totalPages, currentPage + maxShow);
+
+    if (startPage > 1) {
+      pag.push(`<button class="px-2 py-1 border rounded text-blue-600 hover:bg-blue-50 mr-1" onclick="goToPageJs(1)">1</button>`);
+      if (startPage > 2) pag.push(`<span class="px-2">...</span>`);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pag.push(
+        i === currentPage
+        ? `<span class="px-2 py-1 border rounded bg-blue-600 text-white mr-1">${i}</span>`
+        : `<button class="px-2 py-1 border rounded text-blue-600 hover:bg-blue-50 mr-1" onclick="goToPageJs(${i})">${i}</button>`
+      );
+    }
+
+    if (endPage < totalPages) {
+      if (endPage < totalPages-1) pag.push(`<span class="px-2">...</span>`);
+      pag.push(`<button class="px-2 py-1 border rounded text-blue-600 hover:bg-blue-50 mr-1" onclick="goToPageJs(${totalPages})">${totalPages}</button>`);
+    }
+    // Botón siguiente
+    pag.push(`<button class="px-2 py-1 border rounded ${currentPage===totalPages?"text-gray-400":"text-gray-700 hover:bg-gray-100"} ml-1" ${currentPage===totalPages?"disabled":""} onclick="goToPageJs(${currentPage+1})">Siguiente</button>`);
+    pagDiv.innerHTML = pag.join('');
+  }
+
+  // Hack para usar goToPage desde el HTML dinámico
+  window.goToPageJs = function(n) {
+    currentPage = n;
+    renderTable();
+    renderPagination();
+    document.getElementById('productsTable').scrollIntoView({behavior:'smooth'});
+  }
+
+  // Buscadores independientes
   document.getElementById('searchInput').oninput = function() {
     search1 = this.value;
-    renderTable();
+    applyFilters();
   };
   document.getElementById('searchCodigo').oninput = function() {
     search2 = this.value;
-    renderTable();
+    applyFilters();
   };
 </script>
 </body>
