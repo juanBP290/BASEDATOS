@@ -15,14 +15,13 @@
       height: 10px;
     }
     .fijo {
-      min-width: 1300px !important;
+      min-width: 1200px !important;
     }
     @media (min-width: 1800px) {
       .fijo {
-        min-width: 1700px !important;
+        min-width: 1600px !important;
       }
     }
-    /* Limita el ancho de descripción y permite varias líneas */
     .descripcion-col {
       max-width: 120px;
       min-width: 100px;
@@ -82,7 +81,6 @@
               <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">PRODUCTO</th>
               <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 descripcion-col">DESCRIPCIÓN</th>
               <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">OBERVACIONES</th>
-              <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">PROVEEDOR</th>
               <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">STOCK FINAL</th>
               <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">PRECIO</th>
             </tr>
@@ -202,7 +200,7 @@
     if (filtered.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="11" class="px-6 py-4 text-center text-gray-500">
+          <td colspan="10" class="px-6 py-4 text-center text-gray-500">
             No se encontraron resultados
           </td>
         </tr>
@@ -222,7 +220,6 @@
         <td class="px-1 py-1 text-[11px] whitespace-nowrap">${entry.product || ""}</td>
         <td class="px-1 py-1 text-[11px] descripcion-col">${entry.description || ""}</td>
         <td class="px-1 py-1 text-[11px] whitespace-nowrap">${entry.observations || ""}</td>
-        <td class="px-1 py-1 text-[11px] whitespace-nowrap">${entry.supplier || ""}</td>
         <td class="px-1 py-1 text-[11px] whitespace-nowrap">${entry.finalStock !== undefined && entry.finalStock !== null && entry.finalStock !== "" ? entry.finalStock : ""}</td>
         <td class="px-1 py-1 text-[11px] whitespace-nowrap">${entry.price !== "" ? "S/" + Number(entry.price).toFixed(2) : ""}</td>
       `;
