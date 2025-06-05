@@ -22,6 +22,13 @@
         min-width: 1700px !important;
       }
     }
+    /* Limita el ancho de descripción y permite varias líneas */
+    .descripcion-col {
+      max-width: 120px;
+      min-width: 100px;
+      white-space: normal !important;
+      word-break: break-word;
+    }
   </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -73,7 +80,7 @@
               <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">MARCA-ANAQUEL</th>
               <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">TIPO</th>
               <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">PRODUCTO</th>
-              <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">DESCRIPCIÓN</th>
+              <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 descripcion-col">DESCRIPCIÓN</th>
               <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">OBERVACIONES</th>
               <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">PROVEEDOR</th>
               <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">STOCK FINAL</th>
@@ -213,7 +220,7 @@
         <td class="px-1 py-1 text-[11px] whitespace-nowrap">${entry.marcaanaquel || ""}</td>
         <td class="px-1 py-1 text-[11px] whitespace-nowrap">${entry.type || ""}</td>
         <td class="px-1 py-1 text-[11px] whitespace-nowrap">${entry.product || ""}</td>
-        <td class="px-1 py-1 text-[11px] whitespace-nowrap">${entry.description || ""}</td>
+        <td class="px-1 py-1 text-[11px] descripcion-col">${entry.description || ""}</td>
         <td class="px-1 py-1 text-[11px] whitespace-nowrap">${entry.observations || ""}</td>
         <td class="px-1 py-1 text-[11px] whitespace-nowrap">${entry.supplier || ""}</td>
         <td class="px-1 py-1 text-[11px] whitespace-nowrap">${entry.finalStock !== undefined && entry.finalStock !== null && entry.finalStock !== "" ? entry.finalStock : ""}</td>
@@ -285,6 +292,7 @@
 </script>
 </body>
 </html>
+
 
 
 
