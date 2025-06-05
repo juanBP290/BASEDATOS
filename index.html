@@ -15,18 +15,31 @@
       height: 10px;
     }
     .fijo {
-      min-width: 1400px !important;
+      min-width: 1100px !important;
+      /* Puedes bajar a 1000px si tu pantalla es más pequeña */
     }
     @media (min-width: 1800px) {
       .fijo {
-        min-width: 1700px !important;
+        min-width: 1300px !important;
       }
     }
+    /* Reduce el ancho de columnas */
+    .col-codigo, .col-anaquel, .col-codigoproducto, .col-marcaanaquel, .col-tipo, .col-producto, .col-stock, .col-precio, .col-cantidad, .col-total, .col-observaciones {
+      max-width: 70px;
+      min-width: 60px;
+      white-space: nowrap !important;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding-left: 2px;
+      padding-right: 2px;
+    }
     .descripcion-col {
-      max-width: 120px;
-      min-width: 100px;
+      max-width: 100px;
+      min-width: 70px;
       white-space: normal !important;
       word-break: break-word;
+      font-size: 11px;
+      line-height: 1.1rem;
     }
     input[type='number']::-webkit-inner-spin-button,
     input[type='number']::-webkit-outer-spin-button {
@@ -84,18 +97,18 @@
         <table class="min-w-full divide-y divide-gray-200 fijo" id="productsTable">
           <thead class="bg-gray-50">
             <tr>
-              <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">CODIGO</th>
-              <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">ANAQUEL</th>
-              <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">CODIGO PRODUCTO</th>
-              <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">MARCA-ANAQUEL</th>
-              <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">TIPO</th>
-              <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">PRODUCTO</th>
-              <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 descripcion-col">DESCRIPCIÓN</th>
-              <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">OBERVACIONES</th>
-              <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">STOCK FINAL</th>
-              <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">PRECIO</th>
-              <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">CANTIDAD</th>
-              <th class="px-1 py-1 text-[11px] font-semibold text-left text-gray-700 whitespace-nowrap">TOTAL</th>
+              <th class="col-codigo px-1 py-1 text-[11px] font-semibold text-left text-gray-700">CODIGO</th>
+              <th class="col-anaquel px-1 py-1 text-[11px] font-semibold text-left text-gray-700">ANAQUEL</th>
+              <th class="col-codigoproducto px-1 py-1 text-[11px] font-semibold text-left text-gray-700">CODIGO PRODUCTO</th>
+              <th class="col-marcaanaquel px-1 py-1 text-[11px] font-semibold text-left text-gray-700">MARCA-ANAQUEL</th>
+              <th class="col-tipo px-1 py-1 text-[11px] font-semibold text-left text-gray-700">TIPO</th>
+              <th class="col-producto px-1 py-1 text-[11px] font-semibold text-left text-gray-700">PRODUCTO</th>
+              <th class="descripcion-col px-1 py-1 text-[11px] font-semibold text-left text-gray-700">DESCRIPCIÓN</th>
+              <th class="col-observaciones px-1 py-1 text-[11px] font-semibold text-left text-gray-700">OBERVACIONES</th>
+              <th class="col-stock px-1 py-1 text-[11px] font-semibold text-left text-gray-700">STOCK FINAL</th>
+              <th class="col-precio px-1 py-1 text-[11px] font-semibold text-left text-gray-700">PRECIO</th>
+              <th class="col-cantidad px-1 py-1 text-[11px] font-semibold text-left text-gray-700">CANTIDAD</th>
+              <th class="col-total px-1 py-1 text-[11px] font-semibold text-left text-gray-700">TOTAL</th>
             </tr>
           </thead>
           <tbody id="tableBody" class="bg-white divide-y divide-gray-200">
@@ -238,27 +251,26 @@
     const start = (currentPage - 1) * perPage;
     const end = start + perPage;
     filtered.slice(start, end).forEach(entry => {
-      // identificador único por fila (id o codigo+producto)
       const key = entry.id || (entry.codigo || '') + '-' + (entry.product || '');
       const cantidad = cantidades[key] !== undefined ? cantidades[key] : '';
       const precio = entry.price !== "" ? Number(entry.price) : 0;
       const total = (cantidad && !isNaN(cantidad) && precio) ? (Number(cantidad) * precio) : 0;
       const row = document.createElement('tr');
       row.innerHTML = `
-        <td class="px-1 py-1 text-[11px] whitespace-nowrap">${entry.codigo || ""}</td>
-        <td class="px-1 py-1 text-[11px] whitespace-nowrap">${entry.anaquel || ""}</td>
-        <td class="px-1 py-1 text-[11px] whitespace-nowrap">${entry.codigoproducto || ""}</td>
-        <td class="px-1 py-1 text-[11px] whitespace-nowrap">${entry.marcaanaquel || ""}</td>
-        <td class="px-1 py-1 text-[11px] whitespace-nowrap">${entry.type || ""}</td>
-        <td class="px-1 py-1 text-[11px] whitespace-nowrap">${entry.product || ""}</td>
-        <td class="px-1 py-1 text-[11px] descripcion-col">${entry.description || ""}</td>
-        <td class="px-1 py-1 text-[11px] whitespace-nowrap">${entry.observations || ""}</td>
-        <td class="px-1 py-1 text-[11px] whitespace-nowrap">${entry.finalStock !== undefined && entry.finalStock !== null && entry.finalStock !== "" ? entry.finalStock : ""}</td>
-        <td class="px-1 py-1 text-[11px] whitespace-nowrap">${entry.price !== "" ? "S/" + Number(entry.price).toFixed(2) : ""}</td>
-        <td class="px-1 py-1 text-[11px] whitespace-nowrap">
-          <input type="number" min="0" value="${cantidad}" data-key="${key}" class="cantidad-input border w-14 rounded px-1 py-0.5 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+        <td class="col-codigo px-1 py-1 text-[11px]">${entry.codigo || ""}</td>
+        <td class="col-anaquel px-1 py-1 text-[11px]">${entry.anaquel || ""}</td>
+        <td class="col-codigoproducto px-1 py-1 text-[11px]">${entry.codigoproducto || ""}</td>
+        <td class="col-marcaanaquel px-1 py-1 text-[11px]">${entry.marcaanaquel || ""}</td>
+        <td class="col-tipo px-1 py-1 text-[11px]">${entry.type || ""}</td>
+        <td class="col-producto px-1 py-1 text-[11px]">${entry.product || ""}</td>
+        <td class="descripcion-col px-1 py-1 text-[11px]">${entry.description || ""}</td>
+        <td class="col-observaciones px-1 py-1 text-[11px]">${entry.observations || ""}</td>
+        <td class="col-stock px-1 py-1 text-[11px]">${entry.finalStock !== undefined && entry.finalStock !== null && entry.finalStock !== "" ? entry.finalStock : ""}</td>
+        <td class="col-precio px-1 py-1 text-[11px]">${entry.price !== "" ? "S/" + Number(entry.price).toFixed(2) : ""}</td>
+        <td class="col-cantidad px-1 py-1 text-[11px]">
+          <input type="number" min="0" value="${cantidad}" data-key="${key}" class="cantidad-input border w-12 rounded px-1 py-0.5 focus:outline-none focus:ring-2 focus:ring-blue-300" />
         </td>
-        <td class="px-1 py-1 text-[11px] whitespace-nowrap total-celda">${total > 0 ? "S/" + total.toFixed(2) : ""}</td>
+        <td class="col-total px-1 py-1 text-[11px] font-semibold text-blue-800">${total > 0 ? "S/" + total.toFixed(2) : ""}</td>
       `;
       tbody.appendChild(row);
     });
